@@ -74,6 +74,14 @@ def run_grader(request: GraderRequest):
     }
 
 
+@app.post("/baseline")
+def run_baseline_endpoint():
+    """Trigger baseline inference and return scores."""
+    from ai_readiness_auditor.baseline import run_baseline
+    results = run_baseline("http://localhost:8000")
+    return results
+
+
 def main():
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
