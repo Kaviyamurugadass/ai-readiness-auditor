@@ -29,7 +29,7 @@ from ai_readiness_auditor.models import AuditorAction
 
 API_KEY = os.environ.get("OPENAI_API_KEY", "")
 BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.z.ai/api/paas/v4/")
-MODEL = os.environ.get("OPENAI_MODEL", "glm-4-flash")
+MODEL = os.environ.get("OPENAI_MODEL", "glm-4.5-air")
 
 SYSTEM_PROMPT = """You are an AI agent that improves Python projects for AI-readiness.
 
@@ -154,9 +154,12 @@ def run_task(env_url: str, task_id: str, llm_client: OpenAI) -> dict:
                     temperature=0.0,
                     max_tokens=4096,
                 )
+                if not response.choices:
+                    print(f"  Step {step}: Empty response from LLM: {response}")
+                    break
                 llm_output = response.choices[0].message.content or ""
             except Exception as e:
-                print(f"  Step {step}: LLM error: {e}")
+                print(f"  Step {step}: LLM error: {type(e).__name__}: {e}")
                 break
 
             # Parse response into files
