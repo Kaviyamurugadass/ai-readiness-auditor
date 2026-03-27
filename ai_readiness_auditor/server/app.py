@@ -1,1 +1,83 @@
-# FastAPI app + custom endpoints — Phase 7
+"""FastAPI app for the AI-Readiness Auditor environment."""
+from typing import Dict, List, Optional
+from pydantic import BaseModel
+from openenv.core.env_server import create_app
+
+from ai_readiness_auditor.models import AuditorAction, AuditorObservation
+from .environment import AuditorEnvironment
+from .grading import grade_project
+
+
+app = create_app(
+    env=AuditorEnvironment,
+    action_cls=AuditorAction,
+    observation_cls=AuditorObservation,
+    env_name="ai_readiness_auditor",
+)
+
+
+# ---------------------------------------------------------------------------
+# Custom endpoints required by the hackathon
+# ---------------------------------------------------------------------------
+
+@app.get("/tasks")
+def get_tasks():
+    """Return list of available tasks and action schema."""
+    return {
+        "tasks": [
+            {
+                "id": "easy",
+                "name": "README & llms.txt",
+                "description": "Create README.md with proper sections and llms.txt",
+                "difficulty": "easy",
+                "max_steps": 7,
+            },
+            {
+                "id": "medium",
+                "name": "AI Files & Project Structure",
+                "description": (
+                    "Create CLAUDE.md, AGENTS.md, .env.example, examples/, "
+                    "fix __init__.py, add py.typed"
+                ),
+                "difficulty": "medium",
+                "max_steps": 7,
+            },
+            {
+                "id": "hard",
+                "name": "Full AI-Readiness Audit",
+                "description": (
+                    "All of easy + medium + fix Python code quality "
+                    "(type hints, docstrings, naming, error messages)"
+                ),
+                "difficulty": "hard",
+                "max_steps": 7,
+            },
+        ],
+        "action_schema": AuditorAction.model_json_schema(),
+    }
+
+
+class GraderRequest(BaseModel):
+    task_id: str = "easy"
+    project_files: Dict[str, str] = {}
+
+
+@app.post("/grader")
+def run_grader(request: GraderRequest):
+    """Grade a set of project files for a given task."""
+    result = grade_project(request.project_files, request.task_id)
+    return {
+        "task_id": request.task_id,
+        "score": result.score,
+        "breakdown": result.breakdown,
+        "feedback": result.feedback,
+    }
+
+
+def main():
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+if __name__ == "__main__":
+    main()
