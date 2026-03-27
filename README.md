@@ -90,11 +90,11 @@ python -m ai_readiness_auditor.baseline
 
 | Task | Score | Steps |
 |------|-------|-------|
-| Easy | TBD | TBD |
-| Medium | TBD | TBD |
-| Hard | TBD | TBD |
+| Easy | 0.94 | 6 |
+| Medium | 1.00 | 7 |
+| Hard | 0.75 | 4 |
 
-*(Scores will be updated after baseline run completes)*
+*Baseline model: openrouter/free (auto-selected free model via OpenRouter)*
 
 ## Architecture
 
