@@ -1,0 +1,8 @@
+spec_version: 1
+name: ai_readiness_auditor
+version: "0.1.0"
+description: "An OpenEnv environment where AI agents audit and improve projects for AI-readiness."
+type: space
+runtime: fastapi
+app: server.app:app
+port: 8000

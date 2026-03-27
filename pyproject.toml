@@ -1,0 +1,34 @@
+[project]
+name = "ai-readiness-auditor"
+version = "0.1.0"
+description = "An OpenEnv environment where AI agents audit and improve projects for AI-readiness — adding documentation, AI instruction files, and fixing code quality."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Kaviyamurugadass", email = "kaviyamurugadass@gmail.com" },
+]
+dependencies = [
+    "openenv-core>=0.2.2",
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "websockets",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "openai",
+    "httpx",
+]
+
+[project.scripts]
+server = "server.app:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.backends"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ai_readiness_auditor"]
