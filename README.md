@@ -1,3 +1,14 @@
+---
+title: AI-Readiness Auditor
+emoji: 🔍
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 8000
+tags:
+  - openenv
+---
+
 # AI-Readiness Auditor
 
 An OpenEnv environment where AI agents audit and improve projects for AI-readiness — adding documentation, AI instruction files, and fixing code quality.
