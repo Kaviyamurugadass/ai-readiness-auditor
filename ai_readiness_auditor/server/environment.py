@@ -24,13 +24,16 @@ TASK_DESCRIPTIONS = {
         "3. Create .env.example listing required environment variables\n"
         "4. Create an examples/ folder with working Python example files\n"
         "5. Fix __init__.py to include __all__ listing public exports\n"
-        "6. Add a py.typed marker file\n\n"
+        "6. Add a py.typed marker file\n"
+        "7. Create CONTRIBUTING.md with contribution guidelines, code style, and development setup\n"
+        "8. Create .pre-commit-config.yaml with linting and formatting hooks\n\n"
         "The project is a data pipeline library called 'dataflow'."
     ),
     "hard": (
         "You are auditing a Python project for AI-readiness. Complete ALL of the following:\n"
         "1. Everything from the easy task (README.md, llms.txt)\n"
-        "2. Everything from the medium task (CLAUDE.md, AGENTS.md, .env.example, examples/, __init__.py __all__, py.typed)\n"
+        "2. Everything from the medium task (CLAUDE.md, AGENTS.md, .env.example, examples/, "
+        "__init__.py __all__, py.typed, CONTRIBUTING.md, .pre-commit-config.yaml)\n"
         "3. Fix Python source code: add type hints to all functions, add docstrings, "
         "fix function/variable names to follow PEP 8 (snake_case, descriptive names), "
         "make error messages descriptive\n\n"

@@ -306,6 +306,26 @@ def _grade_structure(files: Dict[str, str]) -> tuple[Dict[str, float], List[str]
     if not has_py_typed:
         feedback.append("Missing py.typed marker file (PEP 561)")
 
+    # CONTRIBUTING.md exists with content
+    contrib_content = _get_file(files, "CONTRIBUTING.md")
+    checks["contributing_md_exists"] = 1.0 if contrib_content else 0.0
+    if not contrib_content:
+        feedback.append("Missing CONTRIBUTING.md — add contribution guidelines for developers and AI agents")
+    else:
+        contrib_words = len(contrib_content.split())
+        checks["contributing_md_content"] = 1.0 if contrib_words >= 50 else min(contrib_words / 50, 1.0)
+        if contrib_words < 50:
+            feedback.append(f"CONTRIBUTING.md too short ({contrib_words} words, aim for 50+)")
+
+    if not contrib_content:
+        checks["contributing_md_content"] = 0.0
+
+    # .pre-commit-config.yaml exists
+    precommit_content = _get_file(files, ".pre-commit-config.yaml")
+    checks["precommit_config_exists"] = 1.0 if precommit_content else 0.0
+    if not precommit_content:
+        feedback.append("Missing .pre-commit-config.yaml — add pre-commit hooks for fast feedback")
+
     return checks, feedback
 
 
