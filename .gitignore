@@ -16,3 +16,4 @@ env/
 .ruff_cache/
 .claude/
 study/
+CLAUDE.md
