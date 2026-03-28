@@ -552,10 +552,15 @@ def grade_hard(files: Dict[str, str]) -> GradeResult:
 def grade_project(project_files: Dict[str, str], task_id: str) -> GradeResult:
     """Grade a project based on the specified task."""
     if task_id == "easy":
-        return grade_easy(project_files)
+        result = grade_easy(project_files)
     elif task_id == "medium":
-        return grade_medium(project_files)
+        result = grade_medium(project_files)
     elif task_id == "hard":
-        return grade_hard(project_files)
+        result = grade_hard(project_files)
     else:
         return GradeResult(score=0.0, breakdown={}, feedback=[f"Unknown task: {task_id}"])
+
+    # Ensure all breakdown values are floats
+    result.breakdown = {k: float(v) for k, v in result.breakdown.items()}
+    result.score = float(result.score)
+    return result
