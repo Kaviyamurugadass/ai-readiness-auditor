@@ -77,7 +77,7 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
 
         return AuditorObservation(
             done=False,
-            reward=None,
+            reward=0.0,
             task_id=task_id,
             task_description=TASK_DESCRIPTIONS[task_id],
             project_files=dict(self._project_files),
