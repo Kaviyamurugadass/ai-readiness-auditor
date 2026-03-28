@@ -26,6 +26,12 @@ Think of it as: **"codebase improvement as a game environment for AI agents."**
 
 Inspired by [Factory.ai's Agent Readiness](https://factory.ai/news/agent-readiness) framework.
 
+## Why This Matters
+
+AI coding agents often fail not because of model limitations, but because the codebase is not structured for AI consumption. Missing documentation, unclear structure, and poor code quality make it difficult for agents to reason and act effectively.
+
+This environment tests whether an agent can **improve the codebase itself** — a critical capability for real-world autonomous development systems.
+
 ## Example Episode (Easy Task)
 
 ```
@@ -45,6 +51,7 @@ Step 4 → Agent resubmits same files, no real improvement
          Score: 0.94 → 0.94  |  Reward: 0.00  (no reward for no-ops)
 
 Done   → Final score: 0.94 in 4 steps
+         Total reward collected: +0.94 (sum of all step rewards = final score)
 ```
 
 ## Tasks & Grading Rubric
