@@ -37,7 +37,8 @@ def get_tasks():
                 "name": "AI Files & Project Structure",
                 "description": (
                     "Create CLAUDE.md, AGENTS.md, .env.example, examples/, "
-                    "fix __init__.py, add py.typed"
+                    "CONTRIBUTING.md, .pre-commit-config.yaml, "
+                    "fix __init__.py with __all__, add py.typed"
                 ),
                 "difficulty": "medium",
                 "max_steps": 7,
