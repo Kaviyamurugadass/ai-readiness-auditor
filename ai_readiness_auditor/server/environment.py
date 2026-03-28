@@ -78,6 +78,7 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
         return AuditorObservation(
             done=False,
             reward=0.0,
+            episode_id=self._state.episode_id,
             task_id=task_id,
             task_description=TASK_DESCRIPTIONS[task_id],
             project_files=dict(self._project_files),
@@ -116,6 +117,7 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
         return AuditorObservation(
             done=done,
             reward=reward,
+            episode_id=self._state.episode_id,
             task_id=self._state.task_id,
             task_description=TASK_DESCRIPTIONS[self._state.task_id],
             project_files=dict(self._project_files),

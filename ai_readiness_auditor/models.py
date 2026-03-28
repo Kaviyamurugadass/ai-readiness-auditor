@@ -19,6 +19,10 @@ class AuditorAction(Action):
 class AuditorObservation(Observation):
     """What the agent sees after each step."""
     # Inherited: done (bool), reward (float|None), metadata (dict)
+    episode_id: str = Field(
+        default="",
+        description="Unique identifier for this episode"
+    )
     task_id: str = Field(
         default="easy",
         description="Task identifier: 'easy', 'medium', or 'hard'"
