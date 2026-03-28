@@ -99,6 +99,13 @@ def _grade_readme(files: Dict[str, str]) -> tuple[Dict[str, float], List[str]]:
     checks["readme_exists"] = 1.0 if exists else 0.0
     if not exists:
         feedback.append("Missing README.md — create one with project documentation")
+        # Still return all checks as 0.0
+        checks["readme_installation"] = 0.0
+        checks["readme_usage"] = 0.0
+        checks["readme_api"] = 0.0
+        checks["readme_code_blocks"] = 0.0
+        checks["readme_valid_code"] = 0.0
+        checks["readme_word_count"] = 0.0
         return checks, feedback
 
     # 2. Installation section
@@ -155,6 +162,8 @@ def _grade_llms_txt(files: Dict[str, str]) -> tuple[Dict[str, float], List[str]]
     checks["llms_txt_exists"] = 1.0 if exists else 0.0
     if not exists:
         feedback.append("Missing llms.txt — create one following llmstxt.org format")
+        checks["llms_txt_structure"] = 0.0
+        checks["llms_txt_links"] = 0.0
         return checks, feedback
 
     # 2. Has structure (headings with #)
@@ -200,6 +209,9 @@ def _grade_claude_md(files: Dict[str, str]) -> tuple[Dict[str, float], List[str]
     checks["claude_md_exists"] = 1.0 if content else 0.0
     if not content:
         feedback.append("Missing CLAUDE.md — create one with project instructions for Claude")
+        checks["claude_md_overview"] = 0.0
+        checks["claude_md_commands"] = 0.0
+        checks["claude_md_structure"] = 0.0
         return checks, feedback
 
     has_overview = _has_heading(content, [r"overview", r"about", r"description", r"project"])
@@ -233,6 +245,7 @@ def _grade_agents_md(files: Dict[str, str]) -> tuple[Dict[str, float], List[str]
     checks["agents_md_exists"] = 1.0 if exists else 0.0
     if not exists:
         feedback.append("Missing AGENTS.md — create one with AI agent instructions")
+        checks["agents_md_content"] = 0.0
         return checks, feedback
 
     word_count = len(content.split())
