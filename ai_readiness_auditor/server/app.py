@@ -47,7 +47,7 @@ def get_tasks():
                 "id": "hard",
                 "name": "Full AI-Readiness Audit",
                 "description": (
-                    "All of easy + medium + refactor 38 Python functions: "
+                    "All of easy + medium + refactor all Python functions (~38): "
                     "add type hints, add docstrings, rename to PEP 8 snake_case, "
                     "make error messages descriptive"
                 ),
