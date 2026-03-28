@@ -94,6 +94,10 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
         timeout_s: Optional[float] = None,
         **kwargs: Any,
     ) -> AuditorObservation:
+        # If step called without reset, auto-reset with easy task
+        if not self._state.task_id:
+            self.reset()
+
         self._state.step_count += 1
 
         # Apply file changes from the agent
@@ -104,7 +108,8 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
         self._state.project_files = dict(self._project_files)
 
         # Re-grade
-        grade = grade_project(self._project_files, self._state.task_id)
+        task_id = self._state.task_id or "easy"
+        grade = grade_project(self._project_files, task_id)
 
         # Delta-based reward
         reward = round(grade.score - self._state.current_score, 4)
@@ -117,9 +122,9 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
         return AuditorObservation(
             done=done,
             reward=reward,
-            episode_id=self._state.episode_id,
-            task_id=self._state.task_id,
-            task_description=TASK_DESCRIPTIONS[self._state.task_id],
+            episode_id=self._state.episode_id or "",
+            task_id=task_id,
+            task_description=TASK_DESCRIPTIONS.get(task_id, ""),
             project_files=dict(self._project_files),
             score=grade.score,
             score_breakdown=grade.breakdown,
