@@ -28,7 +28,7 @@ def get_tasks():
             {
                 "id": "easy",
                 "name": "README & llms.txt",
-                "description": "Create README.md with standard sections (Installation, Usage, API Reference, code examples) and llms.txt with project description and links",
+                "description": "Create README.md with standard sections (Installation, Usage, API Reference, code examples) and llms.txt with project description and links for the given codebase",
                 "difficulty": "easy",
                 "max_steps": 7,
             },
@@ -36,7 +36,8 @@ def get_tasks():
                 "id": "medium",
                 "name": "AI Files & Project Structure",
                 "description": (
-                    "Create CLAUDE.md, AGENTS.md, .env.example, examples/, "
+                    "Improve project structure for the given repository: "
+                    "create CLAUDE.md, AGENTS.md, .env.example, examples/, "
                     "CONTRIBUTING.md, .pre-commit-config.yaml, "
                     "fix __init__.py with __all__, add py.typed"
                 ),
@@ -47,7 +48,8 @@ def get_tasks():
                 "id": "hard",
                 "name": "Full AI-Readiness Audit",
                 "description": (
-                    "All of easy + medium + refactor all Python functions (~38): "
+                    "Perform full AI-readiness audit on the given codebase: "
+                    "all of easy + medium + refactor all Python functions (~38): "
                     "add type hints, add docstrings, rename to PEP 8 snake_case, "
                     "make error messages descriptive"
                 ),
