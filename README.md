@@ -11,20 +11,41 @@ tags:
 
 # AI-Readiness Auditor
 
-An OpenEnv environment where AI agents audit and improve projects for AI-readiness — adding documentation, AI instruction files, and fixing code quality.
+An OpenEnv environment where AI agents audit and improve projects for AI-readiness.
 
-Inspired by [Factory.ai's Agent Readiness](https://factory.ai/news/agent-readiness) framework: when AI agents underperform, the issue is often the codebase environment, not the model.
+## TL;DR
 
-## What It Does
+An AI agent receives a broken Python project and must fix it step-by-step.
 
-The environment gives an AI agent a deliberately AI-unfriendly Python project (38 functions, 0% type hints, 0% docstrings, no README, no AI files) and challenges it to make the project AI-ready.
+- **Input:** Broken project (no docs, bad code, no AI instruction files)
+- **Action:** Agent edits/creates files each step
+- **Reward:** Delta-based (improvement in quality score)
+- **Goal:** Reach a 1.0 AI-readiness score
 
-Each step:
-1. Agent reads the project files + feedback
-2. Agent submits improved/new files
-3. Environment scores the changes deterministically (0.0–1.0)
-4. Agent gets score + per-check breakdown + feedback on what's missing
-5. Repeat (max 7 steps)
+Think of it as: **"codebase improvement as a game environment for AI agents."**
+
+Inspired by [Factory.ai's Agent Readiness](https://factory.ai/news/agent-readiness) framework.
+
+## Example Episode (Easy Task)
+
+```
+Reset  → Agent sees: 5 broken Python files, no README, no docs
+         Score: 0.00
+
+Step 1 → Agent creates README.md with Installation, Usage, API sections
+         Score: 0.00 → 0.50  |  Reward: +0.50
+
+Step 2 → Agent creates llms.txt with project description and links
+         Score: 0.50 → 0.78  |  Reward: +0.28
+
+Step 3 → Agent improves README — adds Python code examples, more content
+         Score: 0.78 → 0.94  |  Reward: +0.16
+
+Step 4 → Agent resubmits same files, no real improvement
+         Score: 0.94 → 0.94  |  Reward: 0.00  (no reward for no-ops)
+
+Done   → Final score: 0.94 in 4 steps
+```
 
 ## Tasks & Grading Rubric
 
@@ -32,7 +53,7 @@ Each step:
 
 **Goal:** Create project documentation that AI agents and developers can read.
 
-**Difficulty:** File presence + content quality. Most LLMs can generate a good README.
+**What's tested:** File presence + content quality. This task evaluates documentation generation capabilities.
 
 | # | Check | Method | Pass Criteria |
 |---|-------|--------|---------------|
@@ -55,7 +76,7 @@ Each step:
 
 **Goal:** Make the project navigable and usable by AI coding agents (Claude, Copilot, Cursor).
 
-**Difficulty:** Requires understanding project structure, creating multiple files with correct content, and fixing code.
+**What's tested:** Understanding project structure, creating multiple files with correct content, and fixing code configuration.
 
 | # | Check | Method | Pass Criteria |
 |---|-------|--------|---------------|
@@ -82,14 +103,14 @@ Each step:
 
 **Goal:** Complete AI-readiness overhaul — documentation, AI files, structure, AND code quality.
 
-**Difficulty:** Requires code understanding, refactoring 38 functions across 5 files, plus everything from easy and medium tasks. Genuinely challenges frontier models.
+**What's tested:** Code understanding, refactoring ~38 functions across 5 files, plus everything from easy and medium tasks.
 
 **Composite scoring:**
 - Easy checks (Task 1): **25% weight**
 - Medium checks (Task 2): **25% weight**
 - Code quality checks: **50% weight**
 
-#### Code Quality Checks (applied to 5 source files, 38 functions)
+#### Code Quality Checks (applied to 5 source files, ~38 functions)
 
 | # | Check | Method | Score |
 |---|-------|--------|-------|
@@ -109,25 +130,33 @@ Each step:
 |-------|--------------|----------------|
 | **Easy** | File presence + content | Generate docs from reading code |
 | **Medium** | Structure + correctness + multiple files | Understand project layout, create valid configs |
-| **Hard** | Code reasoning + refactoring | Understand code intent, rename functions, add type hints across 38 functions |
+| **Hard** | Code reasoning + refactoring | Understand code intent, rename functions, add type hints |
+
+## Why This Environment is Challenging
+
+- **Multi-step reasoning across files** — agent must read 5 source files to understand the project before writing docs
+- **Combines documentation + code refactoring** — the hard task requires both writing and coding skills
+- **Large action space** — agent can create/modify any file with any content
+- **Penalizes destructive edits** — submitting invalid Python yields negative reward
+- **Genuinely hard for frontier models** — baseline scores 0.75 on hard task; renaming 38 functions correctly while preserving functionality is non-trivial
 
 The sample project has:
-- **38 functions** with 0% type hints, 0% docstrings
+- **~38 functions** with 0% type hints, 0% docstrings
 - **12 functions** with camelCase names (violating PEP 8)
 - **All error messages** are generic ("bad", "error")
 - **Zero** documentation files
 
 ## Action Space
 
-The agent submits a dictionary of file changes each step:
+The agent submits file changes each step:
 
-```python
+```json
 {
     "files": {
         "README.md": "# DataFlow\n\n## Installation\n...",
         "src/dataflow/loader.py": "def load_file(path: str) -> list:\n    ..."
     },
-    "done": false  // Set to true to finish early
+    "done": false
 }
 ```
 
@@ -141,10 +170,11 @@ After each step, the agent receives:
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `episode_id` | string | Unique identifier for this episode |
 | `task_id` | string | "easy", "medium", or "hard" |
 | `task_description` | string | Detailed instructions for the task |
 | `project_files` | dict | Current state of ALL project files (path -> content) |
-| `score` | float | Current aggregate score (0.0–1.0) |
+| `score` | float | Current aggregate score (0.0-1.0) |
 | `score_breakdown` | dict | Per-check scores (e.g. `{"readme_exists": 1.0, "llms_txt_exists": 0.0}`) |
 | `feedback` | list[str] | Human-readable feedback on what's still missing |
 | `steps_remaining` | int | Steps left before episode ends (max 7) |
@@ -161,41 +191,54 @@ reward = new_score - old_score
 
 | Scenario | Reward | Signal |
 |----------|--------|--------|
-| Agent adds README (score 0.0 → 0.5) | +0.5 | Positive — good improvement |
-| Agent adds llms.txt (score 0.5 → 0.9) | +0.4 | Positive — more improvement |
-| Agent submits nothing useful | 0.0 | Zero — no change |
-| Agent breaks valid Python | Negative | Penalty — code quality dropped |
+| Agent adds README (score 0.0 -> 0.5) | +0.5 | Positive: good improvement |
+| Agent adds llms.txt (score 0.5 -> 0.9) | +0.4 | Positive: more improvement |
+| Agent submits same content again | 0.0 | Zero: no reward for no-ops |
+| Agent breaks valid Python | Negative | Penalty: code quality dropped |
 
 **Properties:**
 - Sum of rewards across episode = final score (telescoping sum)
 - Partial credit at every step (not just binary end-of-episode)
 - Penalizes destructive actions (submitting invalid code)
-- Agent can finish early by setting `done: true`
+- Episode ends when: score >= 1.0, steps run out (max 7), or agent sets `done: true`
 
-## Baseline Scores
+## Baseline Agent
+
+The baseline agent uses an OpenAI-compatible LLM to play all 3 tasks:
+
+1. Reads project files + feedback from the observation
+2. Generates improved/new files using the LLM
+3. Submits files to the environment
+4. Iterates until max steps or score >= 0.95
+
+This provides a reproducible reference score for comparison.
 
 | Task | Score | Steps | Interpretation |
 |------|-------|-------|----------------|
-| Easy | 0.94 | 6 | Most LLMs can generate good docs |
+| Easy | 0.94 | 6 | Documentation generation is straightforward for LLMs |
 | Medium | 1.00 | 7 | Achievable with multiple focused steps |
-| Hard | 0.75 | 4 | Code refactoring is genuinely challenging |
+| Hard | 0.75 | 4 | Code refactoring genuinely challenges frontier models |
 
 *Baseline model: openrouter/free (auto-selected free model via OpenRouter)*
+
+## OpenEnv Compliance
+
+This environment follows the OpenEnv specification:
+
+- `reset()` returns initial observation with project files and task description
+- `step(action)` returns observation + delta reward + done flag
+- Typed Pydantic models for Action, Observation, and State
+- Deterministic grading (ast + regex, no LLM in the loop)
+- Reproducible baseline with consistent scores
+- Passes `openenv validate`
 
 ## Setup
 
 ### Local Development
 
 ```bash
-# Install dependencies
 pip install -e .
-
-# Start server
 uvicorn server.app:app --host 0.0.0.0 --port 8000
-
-# Test endpoints
-curl http://localhost:8000/health
-curl http://localhost:8000/tasks
 ```
 
 ### Docker
@@ -209,7 +252,7 @@ docker run -p 8000:8000 ai-readiness-auditor
 
 ```bash
 export OPENAI_API_KEY="your-api-key"
-export OPENAI_BASE_URL="https://openrouter.ai/api/v1"  # or any OpenAI-compatible API
+export OPENAI_BASE_URL="https://openrouter.ai/api/v1"
 export OPENAI_MODEL="openrouter/free"
 python -m ai_readiness_auditor.baseline
 ```
@@ -237,7 +280,7 @@ ai_readiness_auditor/
     ├── environment.py # Core logic: reset/step/state
     ├── grading.py     # Deterministic scoring (ast + regex)
     └── sample_project/# The "broken" project agents must fix
-        └── src/dataflow/  # 5 files, 38 functions, deliberately bad
+        └── src/dataflow/  # 5 files, ~38 functions, deliberately bad
 ```
 
 ## License
