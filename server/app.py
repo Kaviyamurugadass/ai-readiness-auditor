@@ -93,9 +93,66 @@ def run_grader(request: GraderRequest):
 
 @app.post("/baseline")
 def run_baseline_endpoint():
-    """Trigger baseline inference and return scores."""
-    from baseline import run_baseline
-    results = run_baseline("http://localhost:8000")
+    """Run baseline inference directly (no WebSocket, no self-connection)."""
+    import os
+    from openai import OpenAI
+    from baseline import parse_file_response, build_prompt, SYSTEM_PROMPT
+
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    base_url = os.environ.get("OPENAI_BASE_URL", "https://api.z.ai/api/paas/v4/")
+    model = os.environ.get("OPENAI_MODEL", "glm-4.5-air")
+
+    if not api_key:
+        return {"error": "OPENAI_API_KEY not set"}
+
+    llm_client = OpenAI(api_key=api_key, base_url=base_url)
+    results = {}
+
+    for task_id in ["easy", "medium", "hard"]:
+        try:
+            env = AuditorEnvironment()
+            obs = env.reset(task_id=task_id)
+            step = 0
+
+            for _ in range(7):
+                if obs.done:
+                    break
+                step += 1
+                prompt = build_prompt(obs)
+                try:
+                    response = llm_client.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": prompt},
+                        ],
+                        temperature=0.0,
+                        max_tokens=4096,
+                    )
+                    if not response.choices:
+                        break
+                    llm_output = response.choices[0].message.content or ""
+                except Exception:
+                    break
+
+                files = parse_file_response(llm_output)
+                if not files:
+                    break
+
+                from models import AuditorAction
+                obs = env.step(AuditorAction(files=files))
+                if obs.score >= 0.95:
+                    break
+
+            results[task_id] = {
+                "task_id": task_id,
+                "final_score": obs.score,
+                "steps_taken": step,
+                "breakdown": obs.score_breakdown,
+            }
+        except Exception as e:
+            results[task_id] = {"task_id": task_id, "error": str(e)}
+
     return results
 
 
