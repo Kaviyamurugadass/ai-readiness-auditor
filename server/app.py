@@ -79,9 +79,11 @@ class GraderRequest(BaseModel):
     project_files: Dict[str, str] = {}
 
 
-@app.post("/grader")
-def run_grader(request: GraderRequest):
-    """Grade a set of project files for a given task."""
+@app.api_route("/grader", methods=["GET", "POST"])
+def run_grader(request: GraderRequest = None):
+    """Grade project files for a given task. GET returns empty project score, POST accepts files."""
+    if request is None:
+        request = GraderRequest()
     result = grade_project(request.project_files, request.task_id)
     return {
         "task_id": request.task_id,
@@ -91,7 +93,7 @@ def run_grader(request: GraderRequest):
     }
 
 
-@app.post("/baseline")
+@app.api_route("/baseline", methods=["GET", "POST"])
 def run_baseline_endpoint():
     """Run baseline inference directly (no WebSocket, no self-connection)."""
     import os
