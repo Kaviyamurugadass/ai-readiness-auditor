@@ -261,7 +261,7 @@ docker run -p 8000:8000 ai-readiness-auditor
 export OPENAI_API_KEY="your-api-key"
 export OPENAI_BASE_URL="https://openrouter.ai/api/v1"
 export OPENAI_MODEL="openrouter/free"
-python -m ai_readiness_auditor.baseline
+python baseline.py
 ```
 
 ## Endpoints
@@ -278,16 +278,21 @@ python -m ai_readiness_auditor.baseline
 ## Architecture
 
 ```
-ai_readiness_auditor/
-├── models.py          # Pydantic: AuditorAction, AuditorObservation, AuditorState
-├── client.py          # WebSocket client (AuditorEnv)
-├── baseline.py        # OpenAI-compatible baseline agent
-└── server/
-    ├── app.py         # FastAPI + custom endpoints
-    ├── environment.py # Core logic: reset/step/state
-    ├── grading.py     # Deterministic scoring (ast + regex)
-    └── sample_project/# The "broken" project agents must fix
-        └── src/dataflow/  # 5 files, ~38 functions, deliberately bad
+├── models.py             # Pydantic: AuditorAction, AuditorObservation, AuditorState
+├── client.py             # WebSocket client (AuditorEnv)
+├── baseline.py           # OpenAI-compatible baseline agent
+├── server/
+│   ├── app.py            # FastAPI + custom endpoints
+│   ├── environment.py    # Core logic: reset/step/state
+│   └── grading.py        # Deterministic scoring (ast + regex)
+├── data/
+│   └── sample_project/   # The "broken" project agents must fix
+│       └── src/dataflow/ # 5 files, ~38 functions, deliberately bad
+├── static/
+│   └── index.html        # Interactive dashboard UI
+├── Dockerfile
+├── openenv.yaml
+└── README.md
 ```
 
 ## License
