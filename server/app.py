@@ -115,6 +115,7 @@ def run_baseline_endpoint():
             env = AuditorEnvironment()
             obs = env.reset(task_id=task_id)
             step = 0
+            last_error = None
 
             for _ in range(7):
                 if obs.done:
@@ -132,13 +133,16 @@ def run_baseline_endpoint():
                         max_tokens=4096,
                     )
                     if not response.choices:
+                        last_error = f"Empty response: {response}"
                         break
                     llm_output = response.choices[0].message.content or ""
-                except Exception:
+                except Exception as e:
+                    last_error = f"LLM error: {type(e).__name__}: {e}"
                     break
 
                 files = parse_file_response(llm_output)
                 if not files:
+                    last_error = "No files parsed from LLM response"
                     break
 
                 from models import AuditorAction
@@ -146,12 +150,16 @@ def run_baseline_endpoint():
                 if obs.score >= 0.95:
                     break
 
-            results[task_id] = {
+            result = {
                 "task_id": task_id,
                 "final_score": obs.score,
                 "steps_taken": step,
                 "breakdown": obs.score_breakdown,
+                "model": model,
             }
+            if last_error:
+                result["error"] = last_error
+            results[task_id] = result
         except Exception as e:
             results[task_id] = {"task_id": task_id, "error": str(e)}
 
