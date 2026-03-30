@@ -183,12 +183,15 @@ def run_task(env_url: str, task_id: str, llm_client: OpenAI) -> dict:
     # Save output files
     output_dir = os.path.join("outputs", task_id)
     os.makedirs(output_dir, exist_ok=True)
+    print(f"  Files in final observation: {sorted(obs.project_files.keys())}")
     for path, content in obs.project_files.items():
         file_path = os.path.join(output_dir, path)
-        os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
+        file_dir = os.path.dirname(file_path)
+        if file_dir:
+            os.makedirs(file_dir, exist_ok=True)
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
-    print(f"  Output saved to: {output_dir}/")
+    print(f"  Output saved to: {output_dir}/ ({len(obs.project_files)} files)")
 
     final = {
         "task_id": task_id,

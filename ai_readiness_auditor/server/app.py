@@ -1,6 +1,7 @@
 """FastAPI app for the AI-Readiness Auditor environment."""
 from typing import Dict, List, Optional
 from pydantic import BaseModel
+from fastapi.responses import RedirectResponse
 from openenv.core.env_server import create_app
 
 from ai_readiness_auditor.models import AuditorAction, AuditorObservation
@@ -14,6 +15,12 @@ app = create_app(
     observation_cls=AuditorObservation,
     env_name="ai_readiness_auditor",
 )
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    """Redirect root to web interface."""
+    return RedirectResponse(url="/web/")
 
 
 # ---------------------------------------------------------------------------
