@@ -115,7 +115,7 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
         return self._state
 
     def _load_sample_project(self):
-        project_dir = Path(__file__).parent / "sample_project"
+        project_dir = Path(__file__).parent.parent / "data" / "sample_project"
         files = {}
         for file_path in project_dir.rglob("*"):
             if file_path.is_file():

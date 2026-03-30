@@ -8,9 +8,10 @@ RUN pip install --no-cache-dir hatchling && \
     pip install --no-cache-dir openenv-core fastapi uvicorn pydantic websockets openai
 
 # Copy project files
-COPY ai_readiness_auditor/ ai_readiness_auditor/
+COPY models.py client.py baseline.py __init__.py openenv.yaml ./
 COPY server/ server/
-COPY openenv.yaml .
+COPY static/ static/
+COPY data/ data/
 
 EXPOSE 8000
 
