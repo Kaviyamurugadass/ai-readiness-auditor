@@ -29,6 +29,13 @@ def root():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
+@app.get("/web", include_in_schema=False)
+@app.get("/web/", include_in_schema=False)
+def web_redirect():
+    """Override OpenEnv's default /web/ to serve our dashboard."""
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+
 # ---------------------------------------------------------------------------
 # Custom endpoints required by the hackathon
 # ---------------------------------------------------------------------------
