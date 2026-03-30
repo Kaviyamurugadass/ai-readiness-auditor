@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Readiness Auditor</title>
+<style>
+:root {
+  --bg: #0b0e17;
+  --surface: rgba(255,255,255,0.04);
+  --surface-hover: rgba(255,255,255,0.08);
+  --border: rgba(255,255,255,0.08);
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --accent: #10b981;
+  --accent-glow: rgba(16,185,129,0.25);
+  --cyan: #06b6d4;
+  --cyan-glow: rgba(6,182,212,0.25);
+  --amber: #f59e0b;
+  --amber-glow: rgba(245,158,11,0.15);
+  --red: #ef4444;
+  --red-glow: rgba(239,68,68,0.15);
+  --green: #22c55e;
+  --green-glow: rgba(34,197,94,0.15);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before, body::after {
+  content:''; position:fixed; border-radius:50%; filter:blur(120px); opacity:0.15; pointer-events:none; z-index:0;
+}
+body::before { width:600px; height:600px; background:radial-gradient(circle,var(--accent) 0%,transparent 70%); top:-200px; left:-200px; animation:float1 20s ease-in-out infinite; }
+body::after { width:500px; height:500px; background:radial-gradient(circle,var(--cyan) 0%,transparent 70%); bottom:-200px; right:-200px; animation:float2 25s ease-in-out infinite; }
+@keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(100px,80px)} }
+@keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-80px,-60px)} }
+
+.container { max-width:1200px; margin:0 auto; padding:24px; position:relative; z-index:1; }
+
+/* Header */
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; }
+header h1 { font-size:28px; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--cyan)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+header .subtitle { font-size:13px; color:var(--text-dim); margin-top:2px; }
+.badges span { padding:5px 14px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:0.5px; margin-left:8px; }
+.badge-version { background:var(--accent); color:#fff; }
+.badge-live { background:var(--cyan); color:#fff; }
+
+/* Stat Cards */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+.stat-card { background:var(--surface); backdrop-filter:blur(20px); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:all 0.3s; }
+.stat-card:hover { background:var(--surface-hover); transform:translateY(-2px); }
+.stat-label { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-dim); margin-bottom:8px; }
+.stat-value { font-size:28px; font-weight:700; }
+.stat-bar { height:4px; border-radius:2px; margin-top:10px; background:rgba(255,255,255,0.06); overflow:hidden; }
+.stat-bar-fill { height:100%; border-radius:2px; transition:width 0.5s ease; }
+.stat-bar-fill.green { background:linear-gradient(90deg,var(--accent),var(--green)); }
+.stat-bar-fill.cyan { background:linear-gradient(90deg,var(--cyan),#67e8f9); }
+.stat-bar-fill.amber { background:linear-gradient(90deg,var(--amber),#fbbf24); }
+
+/* Buttons */
+.control-bar { display:flex; gap:12px; align-items:center; margin-bottom:24px; flex-wrap:wrap; }
+.btn { padding:12px 24px; border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:600; cursor:pointer; transition:all 0.25s; display:inline-flex; align-items:center; gap:8px; }
+.btn:disabled { opacity:0.4; cursor:not-allowed; }
+.btn-primary { background:linear-gradient(135deg,var(--accent),#34d399); color:#fff; box-shadow:0 4px 20px var(--accent-glow); }
+.btn-primary:hover:not(:disabled) { box-shadow:0 6px 30px var(--accent-glow); transform:translateY(-1px); }
+.btn-warning { background:linear-gradient(135deg,var(--amber),#fbbf24); color:#000; box-shadow:0 4px 20px var(--amber-glow); }
+.btn-danger { background:linear-gradient(135deg,#dc2626,var(--red)); color:#fff; box-shadow:0 4px 20px var(--red-glow); }
+.btn-secondary { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+.btn-secondary:hover:not(:disabled) { background:var(--surface-hover); }
+.control-bar .episode-info { margin-left:auto; font-size:13px; color:var(--text-dim); }
+
+/* Panels */
+.panel { background:var(--surface); backdrop-filter:blur(20px); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:0; }
+.panel h3 { font-size:15px; font-weight:600; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+
+/* Main Grid */
+.main-grid { display:grid; grid-template-columns:1fr 380px; gap:20px; }
+@media(max-width:960px) { .main-grid { grid-template-columns:1fr; } .stats-row { grid-template-columns:repeat(2,1fr); } }
+
+/* Score Bars */
+.score-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.score-label { font-size:13px; color:var(--cyan); min-width:60px; font-weight:600; }
+.score-bar { flex:1; height:8px; background:rgba(255,255,255,0.06); border-radius:4px; overflow:hidden; }
+.score-bar-fill { height:100%; border-radius:4px; transition:width 0.6s ease; }
+.score-bar-fill.easy { background:linear-gradient(90deg,var(--green),#34d399); }
+.score-bar-fill.medium { background:linear-gradient(90deg,var(--amber),#fbbf24); }
+.score-bar-fill.hard { background:linear-gradient(90deg,var(--accent),var(--cyan)); }
+.score-value { font-size:13px; min-width:36px; text-align:right; font-weight:600; }
+
+/* Breakdown Table */
+.breakdown-table { width:100%; border-collapse:collapse; font-size:13px; }
+.breakdown-table th { text-align:left; padding:6px 8px; color:var(--text-dim); font-size:11px; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid var(--border); }
+.breakdown-table td { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,0.03); }
+.breakdown-table .pass { color:var(--green); }
+.breakdown-table .fail { color:var(--red); }
+
+/* Action Form */
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); margin-bottom:6px; }
+.form-group select, .form-group input, .form-group textarea {
+  width:100%; padding:10px 14px; background:rgba(255,255,255,0.06); border:1px solid var(--border);
+  border-radius:var(--radius-sm); color:var(--text); font-size:14px; font-family:inherit;
+  transition:border 0.2s;
+}
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus { outline:none; border-color:var(--accent); }
+.form-group textarea { resize:vertical; min-height:200px; font-family:'Fira Code',monospace,inherit; font-size:13px; }
+
+/* Log */
+.log-area { max-height:200px; overflow-y:auto; font-family:'Fira Code',monospace; font-size:12px; color:var(--text-dim); }
+.log-entry { padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
+.log-entry.success { color:var(--green); }
+.log-entry.error { color:var(--red); }
+.log-entry.info { color:var(--cyan); }
+
+/* Toast */
+.toast-container { position:fixed; top:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+.toast { padding:12px 20px; border-radius:var(--radius-sm); font-size:13px; font-weight:500; animation:slideIn 0.3s ease; backdrop-filter:blur(20px); }
+.toast.success { background:var(--green-glow); border:1px solid var(--green); color:var(--green); }
+.toast.error { background:var(--red-glow); border:1px solid var(--red); color:var(--red); }
+.toast.info { background:var(--cyan-glow); border:1px solid var(--cyan); color:var(--cyan); }
+@keyframes slideIn { from{transform:translateX(100px);opacity:0} to{transform:translateX(0);opacity:1} }
+
+/* Checkbox */
+.checkbox-row { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.checkbox-row input[type=checkbox] { accent-color:var(--accent); width:16px; height:16px; }
+.checkbox-row label { font-size:13px; color:var(--text-dim); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div>
+      <h1>AI-Readiness Auditor</h1>
+      <div class="subtitle">OpenEnv Interactive Environment</div>
+    </div>
+    <div class="badges">
+      <span class="badge-version">OPENENV 1.0</span>
+      <span class="badge-live">LIVE</span>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Current Score</div>
+      <div class="stat-value" id="stat-score">—</div>
+      <div class="stat-bar"><div class="stat-bar-fill green" id="bar-score" style="width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Last Reward</div>
+      <div class="stat-value" id="stat-reward">—</div>
+      <div class="stat-bar"><div class="stat-bar-fill cyan" id="bar-reward" style="width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Steps Remaining</div>
+      <div class="stat-value" id="stat-steps">—</div>
+      <div class="stat-bar"><div class="stat-bar-fill amber" id="bar-steps" style="width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Current Step</div>
+      <div class="stat-value" id="stat-step">0</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="control-bar">
+    <button class="btn btn-primary" onclick="resetEnv()">Reset Environment</button>
+    <button class="btn btn-danger" onclick="runBaseline()" id="baseline-btn">Run Baseline Agent</button>
+    <button class="btn btn-warning" onclick="gradeAll()">Grade Tasks</button>
+    <button class="btn btn-secondary" onclick="window.open('/docs','_blank')">API Docs</button>
+    <span class="episode-info">Episode: <strong id="episode-status">Not started</strong></span>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+    <!-- Left Column -->
+    <div style="display:flex;flex-direction:column;gap:20px">
+
+      <!-- Feedback -->
+      <div class="panel">
+        <h3>Feedback</h3>
+        <div id="feedback-area" style="font-size:14px;color:var(--text-dim);">Click <strong>Reset Environment</strong> to start a new episode</div>
+      </div>
+
+      <!-- Task Scores -->
+      <div class="panel">
+        <h3>Task Scores</h3>
+        <div class="score-row">
+          <span class="score-label">Easy</span>
+          <div class="score-bar"><div class="score-bar-fill easy" id="bar-easy" style="width:0%"></div></div>
+          <span class="score-value" id="score-easy">—</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">Medium</span>
+          <div class="score-bar"><div class="score-bar-fill medium" id="bar-medium" style="width:0%"></div></div>
+          <span class="score-value" id="score-medium">—</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">Hard</span>
+          <div class="score-bar"><div class="score-bar-fill hard" id="bar-hard" style="width:0%"></div></div>
+          <span class="score-value" id="score-hard">—</span>
+        </div>
+      </div>
+
+      <!-- Score Breakdown -->
+      <div class="panel">
+        <h3>Score Breakdown</h3>
+        <table class="breakdown-table">
+          <thead><tr><th>Check</th><th>Score</th></tr></thead>
+          <tbody id="breakdown-body">
+            <tr><td colspan="2" style="color:var(--text-dim)">Reset to see breakdown</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Action Log -->
+      <div class="panel">
+        <h3>Action Log</h3>
+        <div class="log-area" id="log-area"></div>
+      </div>
+    </div>
+
+    <!-- Right Column (Sidebar) -->
+    <div style="display:flex;flex-direction:column;gap:20px">
+
+      <!-- Take Action -->
+      <div class="panel">
+        <h3>Take Action</h3>
+        <div class="form-group">
+          <label>Task Difficulty</label>
+          <select id="task-select">
+            <option value="easy">Easy — README + llms.txt</option>
+            <option value="medium">Medium — AI files + structure</option>
+            <option value="hard">Hard — Everything + code quality</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>File Path</label>
+          <input type="text" id="file-path" placeholder="e.g. README.md">
+        </div>
+        <div class="form-group">
+          <label>File Content</label>
+          <textarea id="file-content" placeholder="# DataFlow&#10;&#10;## Installation&#10;&#10;pip install dataflow&#10;&#10;## Usage&#10;..."></textarea>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="done-check">
+          <label for="done-check">Mark as Done (finish early)</label>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="stepEnv()">Submit Step</button>
+      </div>
+
+      <!-- Project Files -->
+      <div class="panel">
+        <h3>Project Files</h3>
+        <div id="files-list" style="font-size:13px;color:var(--text-dim);">Reset to see files</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+const API = '';
+let isDone = false;
+let currentScore = 0;
+
+function showToast(msg, type='info') {
+  const tc = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  tc.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function addLog(msg, type='') {
+  const area = document.getElementById('log-area');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry ' + type;
+  const time = new Date().toLocaleTimeString();
+  entry.textContent = '[' + time + '] ' + msg;
+  area.appendChild(entry);
+  area.scrollTop = area.scrollHeight;
+}
+
+function updateBreakdown(breakdown) {
+  const tbody = document.getElementById('breakdown-body');
+  tbody.innerHTML = '';
+  for (const [key, val] of Object.entries(breakdown)) {
+    const tr = document.createElement('tr');
+    const cls = val >= 0.5 ? 'pass' : 'fail';
+    tr.innerHTML = '<td>' + key + '</td><td class="' + cls + '">' + val.toFixed(2) + '</td>';
+    tbody.appendChild(tr);
+  }
+}
+
+function updateFeedback(feedbackList) {
+  const area = document.getElementById('feedback-area');
+  if (!feedbackList || feedbackList.length === 0) {
+    area.innerHTML = '<span style="color:var(--green)">All checks passing!</span>';
+    return;
+  }
+  area.innerHTML = feedbackList.map(f => '• ' + f).join('<br>');
+}
+
+function updateFiles(projectFiles) {
+  const area = document.getElementById('files-list');
+  if (!projectFiles || Object.keys(projectFiles).length === 0) {
+    area.textContent = 'No files';
+    return;
+  }
+  const items = Object.entries(projectFiles).sort().map(([k, v]) =>
+    '<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.03)">' + k + ' <span style="color:var(--text-dim)">(' + v.length + ' chars)</span></div>'
+  );
+  area.innerHTML = items.join('');
+}
+
+function updateStats(score, reward, steps, step) {
+  document.getElementById('stat-score').textContent = score.toFixed(2);
+  document.getElementById('bar-score').style.width = (score * 100) + '%';
+
+  if (reward !== null && reward !== undefined) {
+    const r = parseFloat(reward);
+    document.getElementById('stat-reward').textContent = (r >= 0 ? '+' : '') + r.toFixed(4);
+    document.getElementById('bar-reward').style.width = Math.min(Math.abs(r) * 100, 100) + '%';
+  }
+
+  if (steps !== null && steps !== undefined) {
+    document.getElementById('stat-steps').textContent = steps;
+    document.getElementById('bar-steps').style.width = (steps / 7 * 100) + '%';
+  }
+
+  document.getElementById('stat-step').textContent = step || 0;
+}
+
+async function resetEnv() {
+  const task = document.getElementById('task-select').value;
+  addLog('Resetting environment (' + task + ')...', 'info');
+
+  try {
+    const res = await fetch(API + '/reset', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({task_id: task})
+    });
+    const data = await res.json();
+    const obs = data.observation || data;
+
+    isDone = false;
+    currentScore = obs.score || 0;
+
+    updateStats(obs.score || 0, 0, obs.steps_remaining || 7, 0);
+    updateBreakdown(obs.score_breakdown || {});
+    updateFeedback(obs.feedback || []);
+    updateFiles(obs.project_files || {});
+
+    document.getElementById('episode-status').textContent = 'Active (' + task + ')';
+    addLog('Environment reset. Episode started!', 'success');
+    showToast('Environment reset — ' + task + ' task', 'success');
+  } catch(e) {
+    addLog('Reset failed: ' + e.message, 'error');
+    showToast('Reset failed', 'error');
+  }
+}
+
+async function stepEnv() {
+  const path = document.getElementById('file-path').value.trim();
+  const content = document.getElementById('file-content').value;
+  const done = document.getElementById('done-check').checked;
+
+  if (!path) {
+    showToast('Enter a file path first', 'error');
+    return;
+  }
+
+  addLog('Submitting: ' + path + '...', 'info');
+
+  try {
+    const res = await fetch(API + '/step', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action: {files: {[path]: content}, done: done}, timeout_s: 30})
+    });
+    const data = await res.json();
+    const obs = data.observation || data;
+
+    isDone = data.done || false;
+    const reward = data.reward || 0;
+    const score = obs.score || 0;
+    const steps = obs.steps_remaining || 0;
+    const stepNum = 7 - steps;
+
+    updateStats(score, reward, steps, stepNum);
+    updateBreakdown(obs.score_breakdown || {});
+    updateFeedback(obs.feedback || []);
+    updateFiles(obs.project_files || {});
+
+    if (reward >= 0) {
+      addLog('Step ' + stepNum + ': Score ' + score.toFixed(4) + ' | Reward: +' + reward.toFixed(4), 'success');
+      showToast('Score: ' + score.toFixed(2) + ' | Reward: +' + reward.toFixed(4), 'success');
+    } else {
+      addLog('Step ' + stepNum + ': Score ' + score.toFixed(4) + ' | Reward: ' + reward.toFixed(4), 'error');
+      showToast('Score dropped! Reward: ' + reward.toFixed(4), 'error');
+    }
+
+    if (isDone) {
+      document.getElementById('episode-status').textContent = 'Complete (score: ' + score.toFixed(2) + ')';
+      addLog('Episode complete! Final score: ' + score.toFixed(4), 'success');
+      showToast('Episode complete! Final score: ' + score.toFixed(4), 'success');
+    }
+  } catch(e) {
+    addLog('Step failed: ' + e.message, 'error');
+    showToast('Step failed', 'error');
+  }
+}
+
+async function gradeAll() {
+  addLog('Grading all tasks...', 'info');
+  try {
+    const results = {};
+    for (const task of ['easy', 'medium', 'hard']) {
+      const res = await fetch(API + '/grader', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({task_id: task, project_files: {}})
+      });
+      const data = await res.json();
+      results[task] = data.score || 0;
+    }
+
+    document.getElementById('score-easy').textContent = (results.easy * 100).toFixed(0) + '%';
+    document.getElementById('bar-easy').style.width = (results.easy * 100) + '%';
+    document.getElementById('score-medium').textContent = (results.medium * 100).toFixed(0) + '%';
+    document.getElementById('bar-medium').style.width = (results.medium * 100) + '%';
+    document.getElementById('score-hard').textContent = (results.hard * 100).toFixed(0) + '%';
+    document.getElementById('bar-hard').style.width = (results.hard * 100) + '%';
+
+    addLog('Grades — Easy: ' + (results.easy*100).toFixed(0) + '% | Medium: ' + (results.medium*100).toFixed(0) + '% | Hard: ' + (results.hard*100).toFixed(0) + '%', 'success');
+    showToast('Task grades updated', 'success');
+  } catch(e) {
+    addLog('Grading failed: ' + e.message, 'error');
+    showToast('Grading failed', 'error');
+  }
+}
+
+async function runBaseline() {
+  const btn = document.getElementById('baseline-btn');
+  btn.disabled = true;
+  btn.textContent = 'Running...';
+  addLog('Running baseline agent (this may take a few minutes)...', 'info');
+  showToast('Baseline agent started — please wait', 'info');
+
+  try {
+    const res = await fetch(API + '/baseline', {method: 'POST'});
+    const data = await res.json();
+
+    if (data.error) {
+      addLog('Baseline error: ' + data.error, 'error');
+      showToast('Baseline failed: ' + data.error, 'error');
+    } else {
+      const scores = {};
+      for (const [task, result] of Object.entries(data)) {
+        scores[task] = result.final_score || 0;
+      }
+
+      if (scores.easy !== undefined) {
+        document.getElementById('score-easy').textContent = (scores.easy * 100).toFixed(0) + '%';
+        document.getElementById('bar-easy').style.width = (scores.easy * 100) + '%';
+      }
+      if (scores.medium !== undefined) {
+        document.getElementById('score-medium').textContent = (scores.medium * 100).toFixed(0) + '%';
+        document.getElementById('bar-medium').style.width = (scores.medium * 100) + '%';
+      }
+      if (scores.hard !== undefined) {
+        document.getElementById('score-hard').textContent = (scores.hard * 100).toFixed(0) + '%';
+        document.getElementById('bar-hard').style.width = (scores.hard * 100) + '%';
+      }
+
+      addLog('Baseline complete — Easy: ' + ((scores.easy||0)*100).toFixed(0) + '% | Medium: ' + ((scores.medium||0)*100).toFixed(0) + '% | Hard: ' + ((scores.hard||0)*100).toFixed(0) + '%', 'success');
+      showToast('Baseline agent finished!', 'success');
+    }
+  } catch(e) {
+    addLog('Baseline failed: ' + e.message, 'error');
+    showToast('Baseline failed', 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Run Baseline Agent';
+}
+
+// Initial log
+addLog('AI-Readiness Auditor loaded. Click Reset to begin.', 'info');
+</script>
+</body>
+</html>

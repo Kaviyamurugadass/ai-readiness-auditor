@@ -31,4 +31,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.backends"
 
 [tool.hatch.build.targets.wheel]
-packages = ["ai_readiness_auditor"]
+packages = ["server"]

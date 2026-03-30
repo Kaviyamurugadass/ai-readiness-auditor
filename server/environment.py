@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 from openenv.core.env_server import Environment
-from ai_readiness_auditor.models import AuditorAction, AuditorObservation, AuditorState
-from .grading import grade_project
+from models import AuditorAction, AuditorObservation, AuditorState
+from server.grading import grade_project
 
 
 TASK_DESCRIPTIONS = {
@@ -49,23 +49,14 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
         self._state = AuditorState()
         self._project_files = {}
 
-    def reset(
-        self,
-        seed: Optional[int] = None,
-        episode_id: Optional[str] = None,
-        **kwargs: Any,
-    ) -> AuditorObservation:
+    def reset(self, seed=None, episode_id=None, **kwargs):
         task_id = kwargs.get("task_id", "easy")
         if task_id not in TASK_DESCRIPTIONS:
             task_id = "easy"
 
-        # Load sample project from disk
         self._project_files = self._load_sample_project()
-
-        # Grade initial state
         grade = grade_project(self._project_files, task_id)
 
-        # Initialize state
         self._state = AuditorState(
             episode_id=episode_id or str(uuid.uuid4()),
             step_count=0,
@@ -76,8 +67,7 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
         )
 
         return AuditorObservation(
-            done=False,
-            reward=0.0,
+            done=False, reward=0.0,
             episode_id=self._state.episode_id,
             task_id=task_id,
             task_description=TASK_DESCRIPTIONS[task_id],
@@ -88,40 +78,28 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
             steps_remaining=self._state.max_steps,
         )
 
-    def step(
-        self,
-        action: AuditorAction,
-        timeout_s: Optional[float] = None,
-        **kwargs: Any,
-    ) -> AuditorObservation:
-        # If step called without reset, auto-reset with easy task
+    def step(self, action, timeout_s=None, **kwargs):
         if not self._state.task_id:
             self.reset()
 
         self._state.step_count += 1
 
-        # Apply file changes from the agent
         for path, content in action.files.items():
             self._project_files[path] = content
 
-        # Sync state
         self._state.project_files = dict(self._project_files)
 
-        # Re-grade
         task_id = self._state.task_id or "easy"
         grade = grade_project(self._project_files, task_id)
 
-        # Delta-based reward
         reward = round(grade.score - self._state.current_score, 4)
         self._state.current_score = grade.score
 
-        # Check if done
         steps_remaining = self._state.max_steps - self._state.step_count
         done = steps_remaining <= 0 or grade.score >= 1.0 or action.done
 
         return AuditorObservation(
-            done=done,
-            reward=reward,
+            done=done, reward=reward,
             episode_id=self._state.episode_id or "",
             task_id=task_id,
             task_description=TASK_DESCRIPTIONS.get(task_id, ""),
@@ -133,17 +111,15 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
         )
 
     @property
-    def state(self) -> AuditorState:
+    def state(self):
         return self._state
 
-    def _load_sample_project(self) -> dict[str, str]:
-        """Load sample project files from disk into a dict."""
+    def _load_sample_project(self):
         project_dir = Path(__file__).parent / "sample_project"
         files = {}
         for file_path in project_dir.rglob("*"):
             if file_path.is_file():
                 rel_path = str(file_path.relative_to(project_dir))
-                # Normalize to forward slashes
                 rel_path = rel_path.replace(os.sep, "/")
                 files[rel_path] = file_path.read_text(encoding="utf-8")
         return files
