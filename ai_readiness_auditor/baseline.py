@@ -180,6 +180,16 @@ def run_task(env_url: str, task_id: str, llm_client: OpenAI) -> dict:
                 print(f"  Score >= 0.95, stopping early")
                 break
 
+    # Save output files
+    output_dir = os.path.join("outputs", task_id)
+    os.makedirs(output_dir, exist_ok=True)
+    for path, content in obs.project_files.items():
+        file_path = os.path.join(output_dir, path)
+        os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+    print(f"  Output saved to: {output_dir}/")
+
     final = {
         "task_id": task_id,
         "final_score": obs.score,
