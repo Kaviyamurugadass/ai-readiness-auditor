@@ -7,6 +7,7 @@ from openenv.core.env_server import create_app
 from ai_readiness_auditor.models import AuditorAction, AuditorObservation
 from .environment import AuditorEnvironment
 from .grading import grade_project
+from .gradio_ui import build_ui
 
 
 app = create_app(
@@ -14,6 +15,7 @@ app = create_app(
     action_cls=AuditorAction,
     observation_cls=AuditorObservation,
     env_name="ai_readiness_auditor",
+    gradio_builder=build_ui,
 )
 
 
