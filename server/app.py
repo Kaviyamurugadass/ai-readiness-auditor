@@ -19,7 +19,7 @@ app = create_fastapi_app(
 )
 
 # Serve custom static HTML dashboard
-STATIC_DIR = Path(__file__).parent / "static"
+STATIC_DIR = Path(__file__).parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
