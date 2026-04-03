@@ -105,14 +105,14 @@ def run_baseline_endpoint():
     """Run baseline inference directly (no WebSocket, no self-connection)."""
     import os
     from openai import OpenAI
-    from baseline import parse_file_response, build_prompt, SYSTEM_PROMPT
+    from inference import parse_file_response, build_prompt, SYSTEM_PROMPT
 
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    base_url = os.environ.get("OPENAI_BASE_URL", "https://api.z.ai/api/paas/v4/")
-    model = os.environ.get("OPENAI_MODEL", "glm-4.5-air")
+    api_key = os.environ.get("HF_TOKEN", "") or os.environ.get("OPENAI_API_KEY", "")
+    base_url = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
+    model = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 
     if not api_key:
-        return {"error": "OPENAI_API_KEY not set"}
+        return {"error": "API key not set. Set HF_TOKEN or OPENAI_API_KEY."}
 
     llm_client = OpenAI(api_key=api_key, base_url=base_url)
     results = {}

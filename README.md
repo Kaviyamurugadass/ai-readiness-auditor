@@ -258,10 +258,8 @@ docker run -p 8000:8000 ai-readiness-auditor
 ### Run Baseline
 
 ```bash
-export OPENAI_API_KEY="your-api-key"
-export OPENAI_BASE_URL="https://openrouter.ai/api/v1"
-export OPENAI_MODEL="openrouter/free"
-python baseline.py
+export HF_TOKEN="your-hf-token"
+python inference.py
 ```
 
 ## Endpoints
@@ -280,7 +278,8 @@ python baseline.py
 ```
 ├── models.py             # Pydantic: AuditorAction, AuditorObservation, AuditorState
 ├── client.py             # WebSocket client (AuditorEnv)
-├── baseline.py           # OpenAI-compatible baseline agent
+├── inference.py          # Baseline inference script (OpenAI-compatible)
+├── baseline.py           # Local baseline runner (uses WebSocket client)
 ├── server/
 │   ├── app.py            # FastAPI + custom endpoints
 │   ├── environment.py    # Core logic: reset/step/state
