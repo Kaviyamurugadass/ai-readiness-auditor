@@ -278,8 +278,7 @@ python inference.py
 ```
 ├── models.py             # Pydantic: AuditorAction, AuditorObservation, AuditorState
 ├── client.py             # WebSocket client (AuditorEnv)
-├── inference.py          # Baseline inference script (OpenAI-compatible)
-├── baseline.py           # Local baseline runner (uses WebSocket client)
+├── inference.py          # Inference script (uses HF Inference API)
 ├── server/
 │   ├── app.py            # FastAPI + custom endpoints
 │   ├── environment.py    # Core logic: reset/step/state
