@@ -37,6 +37,18 @@ def web_redirect():
 
 
 # ---------------------------------------------------------------------------
+# GET versions of endpoints (some judges/tools expect GET)
+# ---------------------------------------------------------------------------
+
+@app.get("/reset")
+def reset_get():
+    """Reset environment via GET (convenience)."""
+    env = AuditorEnvironment()
+    obs = env.reset(task_id="easy")
+    return {"observation": obs.model_dump(), "reward": obs.reward, "done": obs.done}
+
+
+# ---------------------------------------------------------------------------
 # Custom endpoints required by the hackathon
 # ---------------------------------------------------------------------------
 
