@@ -113,8 +113,9 @@ def run_grader(request: GraderRequest = None):
 
 
 @app.api_route("/baseline", methods=["GET", "POST"])
+@app.api_route("/inference", methods=["GET", "POST"])
 def run_baseline_endpoint():
-    """Run baseline inference directly (no WebSocket, no self-connection)."""
+    """Run baseline/inference — same endpoint, both names supported."""
     import os
     from openai import OpenAI
     from inference import parse_file_response, build_prompt, SYSTEM_PROMPT
