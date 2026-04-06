@@ -145,7 +145,7 @@ Done   → Final score: 0.94 in 4 steps
 - **Combines documentation + code refactoring** — the hard task requires both writing and coding skills
 - **Large action space** — agent can create/modify any file with any content
 - **Penalizes destructive edits** — submitting invalid Python yields negative reward
-- **Genuinely hard for frontier models** — baseline scores 0.75 on hard task; renaming 38 functions correctly while preserving functionality is non-trivial
+- **Genuinely hard for frontier models** — baseline scores 0.40 on hard task; renaming 38 functions correctly while preserving functionality is non-trivial
 
 The sample project has:
 - **~38 functions** with 0% type hints, 0% docstrings
@@ -222,11 +222,11 @@ This provides a reproducible reference score for comparison.
 
 | Task | Score | Steps | Interpretation |
 |------|-------|-------|----------------|
-| Easy | 0.94 | 6 | Documentation generation is straightforward for LLMs |
-| Medium | 1.00 | 7 | Achievable with multiple focused steps |
-| Hard | 0.75 | 4 | Code refactoring genuinely challenges frontier models |
+| Easy | 1.00 | 1 | Documentation generation is straightforward for LLMs |
+| Medium | 0.87 | 7 | Requires multiple AI instruction files and project structure fixes |
+| Hard | 0.40 | 7 | Code refactoring genuinely challenges smaller models |
 
-*Baseline model: openrouter/free (auto-selected free model via OpenRouter)*
+*Baseline model: meta-llama/Llama-3.1-8B-Instruct via HuggingFace Inference API (free)*
 
 ## OpenEnv Compliance
 

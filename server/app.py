@@ -122,7 +122,7 @@ def run_baseline_endpoint():
 
     api_key = os.environ.get("HF_TOKEN", "") or os.environ.get("OPENAI_API_KEY", "")
     base_url = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
-    model = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+    model = os.environ.get("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
 
     if not api_key:
         return {"error": "API key not set. Set HF_TOKEN or OPENAI_API_KEY."}
