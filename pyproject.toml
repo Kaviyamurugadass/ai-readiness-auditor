@@ -14,12 +14,12 @@ dependencies = [
     "uvicorn",
     "pydantic",
     "websockets",
+    "openai",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest",
-    "openai",
     "httpx",
 ]
 
