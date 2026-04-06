@@ -89,7 +89,7 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
-        f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}",
+        f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
         flush=True,
     )
 
@@ -148,8 +148,6 @@ def run_task(env_url: str, task_id: str, llm_client: OpenAI) -> dict:
             result = env.reset(task_id=task_id)
             obs = result.observation
 
-            log_step(step=0, action="reset", reward=0.00, done=False, error=None)
-
             for step in range(1, MAX_STEPS + 1):
                 if result.done:
                     break
@@ -202,9 +200,10 @@ def run_task(env_url: str, task_id: str, llm_client: OpenAI) -> dict:
             success = score >= 0.5
 
     except Exception as e:
-        log_step(step=steps_taken + 1, action="error", reward=0.00, done=True, error=str(e))
+        print(f"[DEBUG] Error: {e}", flush=True)
 
-    log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+    finally:
+        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
     return {
         "task_id": task_id,
