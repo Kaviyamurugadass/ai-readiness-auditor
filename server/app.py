@@ -23,17 +23,18 @@ STATIC_DIR = Path(__file__).parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
-@app.get("/", include_in_schema=False)
-def root():
-    """Serve the dashboard."""
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+from starlette.routing import Route
+from starlette.responses import FileResponse as StarletteFileResponse
 
 
-@app.get("/web", include_in_schema=False)
-@app.get("/web/", include_in_schema=False)
-def web_redirect():
-    """Override OpenEnv's default /web/ to serve our dashboard."""
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+def _serve_dashboard(request):
+    return StarletteFileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+
+# Insert our routes at the BEGINNING so they take priority over OpenEnv defaults
+app.routes.insert(0, Route("/", endpoint=_serve_dashboard, methods=["GET"]))
+app.routes.insert(1, Route("/web", endpoint=_serve_dashboard, methods=["GET"]))
+app.routes.insert(2, Route("/web/", endpoint=_serve_dashboard, methods=["GET"]))
 
 
 # ---------------------------------------------------------------------------

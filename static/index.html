@@ -174,7 +174,7 @@ header .subtitle { font-size:13px; color:var(--text-dim); margin-top:2px; }
   <!-- Controls -->
   <div class="control-bar">
     <button class="btn btn-primary" onclick="resetEnv()">Reset Environment</button>
-    <button class="btn btn-danger" onclick="runBaseline()" id="baseline-btn">Run Baseline Agent</button>
+    <button class="btn btn-danger" onclick="runInference()" id="inference-btn">Run Inference</button>
     <button class="btn btn-warning" onclick="gradeAll()">Grade Tasks</button>
     <button class="btn btn-secondary" onclick="window.open('/docs','_blank')">API Docs</button>
     <span class="episode-info">Episode: <strong id="episode-status">Not started</strong></span>
@@ -453,19 +453,19 @@ async function gradeAll() {
   }
 }
 
-async function runBaseline() {
-  const btn = document.getElementById('baseline-btn');
+async function runInference() {
+  const btn = document.getElementById('inference-btn');
   btn.disabled = true;
   btn.textContent = 'Running...';
-  addLog('Running baseline agent (this may take a few minutes)...', 'info');
-  showToast('Baseline agent started — please wait', 'info');
+  addLog('Running inference (this may take a few minutes)...', 'info');
+  showToast('Inference started — please wait', 'info');
 
   try {
-    const res = await fetch(API + '/baseline', {method: 'POST'});
+    const res = await fetch(API + '/inference', {method: 'POST'});
     const data = await res.json();
 
     if (data.error) {
-      addLog('Baseline error: ' + data.error, 'error');
+      addLog('Inference error: ' + data.error, 'error');
       showToast('Baseline failed: ' + data.error, 'error');
     } else {
       const scores = {};
@@ -486,8 +486,8 @@ async function runBaseline() {
         document.getElementById('bar-hard').style.width = (scores.hard * 100) + '%';
       }
 
-      addLog('Baseline complete — Easy: ' + ((scores.easy||0)*100).toFixed(0) + '% | Medium: ' + ((scores.medium||0)*100).toFixed(0) + '% | Hard: ' + ((scores.hard||0)*100).toFixed(0) + '%', 'success');
-      showToast('Baseline agent finished!', 'success');
+      addLog('Inference complete — Easy: ' + ((scores.easy||0)*100).toFixed(0) + '% | Medium: ' + ((scores.medium||0)*100).toFixed(0) + '% | Hard: ' + ((scores.hard||0)*100).toFixed(0) + '%', 'success');
+      showToast('Inference finished!', 'success');
     }
   } catch(e) {
     addLog('Baseline failed: ' + e.message, 'error');
@@ -495,7 +495,7 @@ async function runBaseline() {
   }
 
   btn.disabled = false;
-  btn.textContent = 'Run Baseline Agent';
+  btn.textContent = 'Run Inference';
 }
 
 // Initial log
