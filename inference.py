@@ -1,21 +1,29 @@
-"""Inference script for the AI-Readiness Auditor.
-
-Uses OpenAI-compatible API to run an agent against all 3 tasks.
-
-Required env vars:
-    API_BASE_URL  — LLM API endpoint (e.g. https://openrouter.ai/api/v1)
-    MODEL_NAME    — model to use (e.g. openrouter/free)
-    HF_TOKEN      — Hugging Face token
-
-Usage:
-    python inference.py
-    python inference.py --url https://your-space.hf.space
 """
+Inference Script for AI-Readiness Auditor
+===================================
+MANDATORY
+- Environment variables:
+    API_BASE_URL   The API endpoint for the LLM.
+    MODEL_NAME     The model identifier to use for inference.
+    HF_TOKEN       Your Hugging Face / API key.
+
+- Defaults are set only for API_BASE_URL and MODEL_NAME:
+    API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+    MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
+
+- Uses OpenAI Client for all LLM calls.
+
+STDOUT FORMAT
+    [START] task=<task_name> env=<benchmark> model=<model_name>
+    [STEP]  step=<n> action=<action_str> reward=<0.00> done=<true|false> error=<msg|null>
+    [END]   success=<true|false> steps=<n> score=<score> rewards=<r1,r2,...,rn>
+"""
+
 import os
 import re
 import json
-import argparse
 import sys
+from typing import List, Optional
 
 from openai import OpenAI
 from client import AuditorEnv
@@ -23,15 +31,17 @@ from models import AuditorAction
 
 
 # ---------------------------------------------------------------------------
-# Config — uses the required env var names
+# Config
 # ---------------------------------------------------------------------------
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-# Also support OPENAI_API_KEY as fallback for local testing
 API_KEY = HF_TOKEN or os.getenv("OPENAI_API_KEY", "")
+
+BENCHMARK = "ai-readiness-auditor"
+MAX_STEPS = 7
 
 SYSTEM_PROMPT = """You are an AI agent that improves Python projects for AI-readiness.
 
@@ -49,17 +59,7 @@ Return your file changes in this exact format:
 file content here
 ===END FILE===
 
-You can include multiple files in one response. Example:
-
-===FILE: README.md===
-# My Project
-...content...
-===END FILE===
-
-===FILE: llms.txt===
-# My Project
-...content...
-===END FILE===
+You can include multiple files in one response.
 
 IMPORTANT:
 - Use the exact format above (===FILE: path=== and ===END FILE===)
@@ -70,101 +70,147 @@ IMPORTANT:
 
 
 # ---------------------------------------------------------------------------
+# Logging — exact format from sample
+# ---------------------------------------------------------------------------
+
+def log_start(task: str, env: str, model: str) -> None:
+    print(f"[START] task={task} env={env} model={model}", flush=True)
+
+
+def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
+    error_val = error if error else "null"
+    done_val = str(done).lower()
+    print(
+        f"[STEP] step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}",
+        flush=True,
+    )
+
+
+def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
+    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
+    print(
+        f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}",
+        flush=True,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def parse_file_response(response_text):
-    """Parse LLM response into a dict of {path: content}."""
+def parse_file_response(response_text: str) -> dict:
+    """Parse LLM response into {path: content}."""
     files = {}
     pattern = r'===FILE:\s*(.+?)===\s*\n(.*?)===END FILE==='
     matches = re.findall(pattern, response_text, re.DOTALL)
     for path, content in matches:
-        path = path.strip()
-        content = content.strip() + "\n"
-        files[path] = content
+        files[path.strip()] = content.strip() + "\n"
     if not files and len(response_text.strip()) > 50:
         files["README.md"] = response_text.strip() + "\n"
     return files
 
 
-def build_prompt(observation):
+def build_prompt(observation) -> str:
     """Build a user prompt from the current observation."""
-    prompt_parts = [
+    parts = [
         f"## Task\n{observation.task_description}\n",
         f"## Current Score: {observation.score:.2f} / 1.00",
         f"## Steps Remaining: {observation.steps_remaining}\n",
     ]
     if observation.feedback:
-        prompt_parts.append("## Feedback (what's still missing)")
+        parts.append("## Feedback (what's still missing)")
         for fb in observation.feedback:
-            prompt_parts.append(f"- {fb}")
-        prompt_parts.append("")
-    prompt_parts.append("## Current Project Files\n")
+            parts.append(f"- {fb}")
+        parts.append("")
+    parts.append("## Current Project Files\n")
     for path in sorted(observation.project_files.keys()):
         content = observation.project_files[path]
-        prompt_parts.append(f"### {path}")
-        prompt_parts.append(f"```\n{content}\n```\n")
-    return "\n".join(prompt_parts)
+        parts.append(f"### {path}")
+        parts.append(f"```\n{content}\n```\n")
+    return "\n".join(parts)
 
 
 # ---------------------------------------------------------------------------
-# Run inference for one task
+# Run one task
 # ---------------------------------------------------------------------------
 
-def run_task(env_url, task_id, llm_client):
-    """Run the agent on a single task with structured logging."""
-    print(f"[START] task={task_id}")
+def run_task(env_url: str, task_id: str, llm_client: OpenAI) -> dict:
+    """Run inference on a single task."""
+    rewards: List[float] = []
+    steps_taken = 0
+    score = 0.0
+    success = False
 
-    with AuditorEnv(base_url=env_url).sync() as env:
-        result = env.reset(task_id=task_id)
-        obs = result.observation
+    log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
 
-        print(f"[STEP] task={task_id} step=0 action=reset score={obs.score:.4f} reward=0.0 done=false")
-
-        step = 0
-        while not result.done and obs.steps_remaining > 0:
-            step += 1
-            user_prompt = build_prompt(obs)
-
-            try:
-                response = llm_client.chat.completions.create(
-                    model=MODEL_NAME,
-                    messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    temperature=0.0,
-                    max_tokens=4096,
-                )
-                if not response.choices:
-                    print(f"[STEP] task={task_id} step={step} action=llm_call error=empty_response")
-                    break
-                llm_output = response.choices[0].message.content or ""
-            except Exception as e:
-                print(f"[STEP] task={task_id} step={step} action=llm_call error={type(e).__name__}")
-                break
-
-            files = parse_file_response(llm_output)
-            if not files:
-                print(f"[STEP] task={task_id} step={step} action=parse error=no_files_parsed")
-                break
-
-            result = env.step(AuditorAction(files=files))
+    try:
+        with AuditorEnv(base_url=env_url).sync() as env:
+            result = env.reset(task_id=task_id)
             obs = result.observation
-            reward = result.reward or 0.0
 
-            print(f"[STEP] task={task_id} step={step} action=submit files={len(files)} score={obs.score:.4f} reward={reward:+.4f} done={obs.done}")
+            log_step(step=0, action="reset", reward=0.00, done=False, error=None)
 
-            if obs.score >= 0.95:
-                break
+            for step in range(1, MAX_STEPS + 1):
+                if result.done:
+                    break
 
-    print(f"[END] task={task_id} final_score={obs.score:.4f} steps={step}")
+                user_prompt = build_prompt(obs)
+                error = None
+
+                try:
+                    response = llm_client.chat.completions.create(
+                        model=MODEL_NAME,
+                        messages=[
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        temperature=0.0,
+                        max_tokens=4096,
+                    )
+                    if not response.choices:
+                        error = "empty_response"
+                        log_step(step=step, action="llm_call", reward=0.00, done=False, error=error)
+                        break
+                    llm_output = response.choices[0].message.content or ""
+                except Exception as e:
+                    error = str(e)
+                    log_step(step=step, action="llm_call", reward=0.00, done=False, error=error)
+                    break
+
+                files = parse_file_response(llm_output)
+                if not files:
+                    error = "no_files_parsed"
+                    log_step(step=step, action="parse", reward=0.00, done=False, error=error)
+                    break
+
+                action_str = f"submit({len(files)} files)"
+                result = env.step(AuditorAction(files=files))
+                obs = result.observation
+                reward = result.reward or 0.0
+                done = result.done
+
+                rewards.append(reward)
+                steps_taken = step
+
+                log_step(step=step, action=action_str, reward=reward, done=done, error=None)
+
+                if obs.score >= 0.95:
+                    break
+
+            score = obs.score
+            score = min(max(score, 0.0), 1.0)
+            success = score >= 0.5
+
+    except Exception as e:
+        log_step(step=steps_taken + 1, action="error", reward=0.00, done=True, error=str(e))
+
+    log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
     return {
         "task_id": task_id,
-        "final_score": obs.score,
-        "steps_taken": step,
-        "breakdown": obs.score_breakdown,
+        "final_score": score,
+        "steps_taken": steps_taken,
+        "success": success,
     }
 
 
@@ -172,39 +218,25 @@ def run_task(env_url, task_id, llm_client):
 # Main
 # ---------------------------------------------------------------------------
 
-def run_inference(env_url="http://localhost:8000"):
+def run_inference(env_url: str = "http://localhost:8000") -> dict:
     """Run inference on all 3 tasks."""
     if not API_KEY:
-        print("[END] error=API_KEY_NOT_SET message='Set HF_TOKEN or OPENAI_API_KEY'")
+        print("[END] success=false steps=0 score=0.00 rewards=", flush=True)
         return {"error": "API key not set. Set HF_TOKEN or OPENAI_API_KEY."}
 
     llm_client = OpenAI(api_key=API_KEY, base_url=API_BASE_URL)
 
-    print(f"[START] inference model={MODEL_NAME} base_url={API_BASE_URL}")
-
     results = {}
     for task_id in ["easy", "medium", "hard"]:
-        try:
-            results[task_id] = run_task(env_url, task_id, llm_client)
-        except Exception as e:
-            print(f"[END] task={task_id} error={type(e).__name__}: {e}")
-            results[task_id] = {"task_id": task_id, "error": str(e)}
-
-    # Summary
-    print(f"\n[START] summary")
-    for task_id, r in results.items():
-        score = r.get("final_score", "ERROR")
-        steps = r.get("steps_taken", "?")
-        print(f"[STEP] task={task_id} final_score={score} steps={steps}")
-    print(f"[END] summary")
+        results[task_id] = run_task(env_url, task_id, llm_client)
 
     return results
 
 
 if __name__ == "__main__":
+    import argparse
     parser = argparse.ArgumentParser(description="Run AI-Readiness Auditor inference")
-    parser.add_argument("--url", default="http://localhost:8000",
-                        help="Environment server URL")
+    parser.add_argument("--url", default="http://localhost:8000", help="Environment server URL")
     args = parser.parse_args()
 
     results = run_inference(args.url)
