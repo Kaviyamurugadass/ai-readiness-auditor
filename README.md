@@ -255,7 +255,7 @@ docker build -t ai-readiness-auditor .
 docker run -p 8000:8000 ai-readiness-auditor
 ```
 
-### Run Baseline
+### Run Inference
 
 ```bash
 export HF_TOKEN="your-hf-token"
@@ -267,9 +267,13 @@ python inference.py
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
+| `/reset` | GET, POST | Reset environment, start new episode |
+| `/step` | POST | Submit action, get observation + reward |
+| `/state` | GET | Get current environment state |
 | `/tasks` | GET | List available tasks + action schema |
-| `/grader` | POST | Grade project files for a given task |
-| `/baseline` | POST | Run baseline inference |
+| `/grader` | GET, POST | Grade project files for a given task |
+| `/inference` | GET, POST | Run inference agent against all tasks |
+| `/baseline` | GET, POST | Alias for /inference |
 | `/schema` | GET | Action/Observation/State schemas |
 | `/docs` | GET | Interactive API documentation |
 
