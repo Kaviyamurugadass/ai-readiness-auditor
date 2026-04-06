@@ -13,6 +13,28 @@ tags:
 
 An OpenEnv environment where AI agents audit and improve projects for AI-readiness.
 
+| | Link |
+|---|---|
+| **Live Demo** | [kaviya-m-ai-readiness-auditor.hf.space](https://kaviya-m-ai-readiness-auditor.hf.space) |
+| **GitHub** | [Kaviyamurugadass/ai-readiness-auditor](https://github.com/Kaviyamurugadass/ai-readiness-auditor) |
+| **API Docs** | [/docs](https://kaviya-m-ai-readiness-auditor.hf.space/docs) |
+
+## Quick Evaluation
+
+```bash
+# Test the live environment
+curl -X POST https://kaviya-m-ai-readiness-auditor.hf.space/reset -H "Content-Type: application/json" -d '{}'
+curl https://kaviya-m-ai-readiness-auditor.hf.space/tasks
+curl https://kaviya-m-ai-readiness-auditor.hf.space/health
+
+# Run inference locally
+git clone https://github.com/Kaviyamurugadass/ai-readiness-auditor.git
+cd ai-readiness-auditor
+pip install -r requirements.txt
+export HF_TOKEN="your-token"
+python inference.py
+```
+
 ## TL;DR
 
 An AI agent receives a broken Python project and must fix it step-by-step.
@@ -296,6 +318,18 @@ python inference.py
 ├── openenv.yaml
 └── README.md
 ```
+
+## Submission Checklist
+
+- [x] Public GitHub repository
+- [x] `requirements.txt` included
+- [x] `inference.py` at project root with `[START]`/`[STEP]`/`[END]` logging
+- [x] `README.md` with environment description, action/observation spaces, setup instructions
+- [x] Hugging Face Space deployed and responding
+- [x] `openenv validate` passes
+- [x] Docker builds and runs
+- [x] 3 tasks with deterministic graders (0.0-1.0)
+- [x] Environment variables documented (`API_BASE_URL`, `MODEL_NAME`, `HF_TOKEN`)
 
 ## License
 
