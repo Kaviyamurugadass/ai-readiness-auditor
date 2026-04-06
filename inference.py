@@ -26,12 +26,12 @@ from models import AuditorAction
 # Config — uses the required env var names
 # ---------------------------------------------------------------------------
 
-API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
-MODEL_NAME = os.environ.get("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
 # Also support OPENAI_API_KEY as fallback for local testing
-API_KEY = HF_TOKEN or os.environ.get("OPENAI_API_KEY", "")
+API_KEY = HF_TOKEN or os.getenv("OPENAI_API_KEY", "")
 
 SYSTEM_PROMPT = """You are an AI agent that improves Python projects for AI-readiness.
 
