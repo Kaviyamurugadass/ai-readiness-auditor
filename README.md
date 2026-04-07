@@ -147,8 +147,10 @@ Done   → Final score: 0.94 in 4 steps
 | 2 | Docstring coverage | AST: first body element is string constant | `docstringed / total` functions |
 | 3 | PEP 8 naming | Regex: `^_?[a-z][a-z0-9_]*$` + length > 2 | `compliant / total` functions |
 | 4 | Descriptive error messages | AST: `raise` statements have string args > 10 chars | `descriptive / total` raises |
+| 5 | No bare except clauses | AST: `except:` without exception type | `specific / total` handlers |
+| 6 | README content quality | Depth checks: descriptions, project imports, section content | `passed / total` quality checks |
 
-**Code score = average of 4 checks**
+**Code score = average of 6 checks**
 **Final score = easy_score * 0.25 + medium_score * 0.25 + code_score * 0.50**
 
 ---

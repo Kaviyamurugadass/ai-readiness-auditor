@@ -510,6 +510,76 @@ def _grade_error_messages(files: Dict[str, str]) -> tuple[float, List[str]]:
     return score, feedback
 
 
+def _grade_bare_excepts(files: Dict[str, str]) -> tuple[float, List[str]]:
+    """Grade bare except usage — bare except: is bad practice."""
+    py_files = _get_python_files(files)
+    if not py_files:
+        return 0.0, ["No Python source files found"]
+
+    total_handlers = 0
+    specific_handlers = 0
+
+    for path, content in py_files.items():
+        try:
+            tree = ast.parse(content)
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ExceptHandler):
+                total_handlers += 1
+                if node.type is not None:
+                    specific_handlers += 1
+
+    if total_handlers == 0:
+        return 1.0, []
+
+    score = specific_handlers / total_handlers
+    feedback = []
+    if score < 1.0:
+        bare = total_handlers - specific_handlers
+        feedback.append(f"Bare excepts: {bare}/{total_handlers} handlers use bare 'except:' — specify exception types")
+    return score, feedback
+
+
+def _grade_readme_quality(files: Dict[str, str]) -> tuple[float, List[str]]:
+    """Grade README quality beyond just presence — checks for depth and usefulness."""
+    content = _get_file(files, "README.md")
+    if not content:
+        return 0.0, []
+
+    checks = 0
+    passed = 0
+
+    # Check 1: Has a project description (not just a title)
+    checks += 1
+    first_paragraph = content.split('\n\n')[1] if '\n\n' in content else ""
+    if len(first_paragraph.split()) >= 10:
+        passed += 1
+
+    # Check 2: Code examples reference actual project imports
+    checks += 1
+    code_blocks = _extract_code_blocks(content)
+    has_project_import = any('dataflow' in block or 'import' in block for block in code_blocks)
+    if has_project_import:
+        passed += 1
+
+    # Check 3: Has more than just headings (actual content under sections)
+    checks += 1
+    sections = re.split(r'^##\s+', content, flags=re.MULTILINE)
+    sections_with_content = sum(1 for s in sections[1:] if len(s.split()) > 20)
+    if sections_with_content >= 3:
+        passed += 1
+
+    if checks == 0:
+        return 1.0, []
+
+    score = passed / checks
+    feedback = []
+    if score < 1.0:
+        feedback.append(f"README quality: {passed}/{checks} depth checks pass — add more detailed content under sections")
+    return score, feedback
+
+
 def grade_hard(files: Dict[str, str]) -> GradeResult:
     """Grade Task 3: Everything (easy + medium + code quality)."""
     # Easy checks (25%)
@@ -517,13 +587,15 @@ def grade_hard(files: Dict[str, str]) -> GradeResult:
     # Medium checks (25%)
     medium_result = grade_medium(files)
 
-    # Code quality checks (50%)
+    # Code quality checks (50%) — now 6 dimensions
     type_score, type_fb = _grade_type_hints(files)
     doc_score, doc_fb = _grade_docstrings(files)
     naming_score, naming_fb = _grade_naming(files)
     error_score, error_fb = _grade_error_messages(files)
+    bare_score, bare_fb = _grade_bare_excepts(files)
+    readme_qual_score, readme_qual_fb = _grade_readme_quality(files)
 
-    code_score = (type_score + doc_score + naming_score + error_score) / 4
+    code_score = (type_score + doc_score + naming_score + error_score + bare_score + readme_qual_score) / 6
 
     # Composite score
     score = easy_result.score * 0.25 + medium_result.score * 0.25 + code_score * 0.50
@@ -539,8 +611,11 @@ def grade_hard(files: Dict[str, str]) -> GradeResult:
     breakdown["code_docstrings"] = round(doc_score, 4)
     breakdown["code_naming"] = round(naming_score, 4)
     breakdown["code_error_messages"] = round(error_score, 4)
+    breakdown["code_no_bare_excepts"] = round(bare_score, 4)
+    breakdown["code_readme_quality"] = round(readme_qual_score, 4)
 
-    all_feedback = easy_result.feedback + medium_result.feedback + type_fb + doc_fb + naming_fb + error_fb
+    all_feedback = (easy_result.feedback + medium_result.feedback +
+                    type_fb + doc_fb + naming_fb + error_fb + bare_fb + readme_qual_fb)
 
     return GradeResult(score=round(score, 4), breakdown=breakdown, feedback=all_feedback)
 

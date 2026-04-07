@@ -84,7 +84,7 @@ def get_tasks():
                     "Perform full AI-readiness audit on the given codebase: "
                     "all of easy + medium + refactor all Python functions (~38): "
                     "add type hints, add docstrings, rename to PEP 8 snake_case, "
-                    "make error messages descriptive"
+                    "make error messages descriptive, fix bare except clauses"
                 ),
                 "difficulty": "hard",
                 "max_steps": 7,

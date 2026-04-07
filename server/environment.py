@@ -36,7 +36,7 @@ TASK_DESCRIPTIONS = {
         "__init__.py __all__, py.typed, CONTRIBUTING.md, .pre-commit-config.yaml)\n"
         "3. Fix Python source code: add type hints to all functions, add docstrings, "
         "fix function/variable names to follow PEP 8 (snake_case, descriptive names), "
-        "make error messages descriptive\n\n"
+        "make error messages descriptive, replace bare except: with specific exception types\n\n"
         "The project is a data pipeline library called 'dataflow'."
     ),
 }
