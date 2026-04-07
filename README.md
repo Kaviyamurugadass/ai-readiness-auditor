@@ -163,6 +163,8 @@ Done   → Final score: 0.94 in 4 steps
 | **Medium** | Structure + correctness + multiple files | Understand project layout, create valid configs |
 | **Hard** | Code reasoning + refactoring | Understand code intent, rename functions, add type hints |
 
+**Language support:** The documentation checks (Tasks 1 & 2) are language-agnostic — they work for any project regardless of language. The code quality checks (Task 3) currently support Python via `ast`, with other languages as a planned extension.
+
 ## Why This Environment is Challenging
 
 - **Multi-step reasoning across files** — agent must read 5 source files to understand the project before writing docs
