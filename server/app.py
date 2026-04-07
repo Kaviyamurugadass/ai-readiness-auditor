@@ -99,11 +99,9 @@ class GraderRequest(BaseModel):
     project_files: Dict[str, str] = {}
 
 
-@app.api_route("/grader", methods=["GET", "POST"])
-def run_grader(request: GraderRequest = None):
-    """Grade project files for a given task. GET returns empty project score, POST accepts files."""
-    if request is None:
-        request = GraderRequest()
+@app.post("/grader")
+def run_grader(request: GraderRequest):
+    """Grade project files for a given task."""
     result = grade_project(request.project_files, request.task_id)
     return {
         "task_id": request.task_id,
@@ -113,10 +111,8 @@ def run_grader(request: GraderRequest = None):
     }
 
 
-@app.api_route("/baseline", methods=["GET", "POST"])
-@app.api_route("/inference", methods=["GET", "POST"])
-def run_baseline_endpoint():
-    """Run baseline/inference — same endpoint, both names supported."""
+def _run_inference_internal():
+    """Shared logic for /baseline and /inference endpoints."""
     import os
     from openai import OpenAI
     from inference import parse_file_response, build_prompt, SYSTEM_PROMPT
@@ -185,6 +181,18 @@ def run_baseline_endpoint():
             results[task_id] = {"task_id": task_id, "error": str(e)}
 
     return results
+
+
+@app.post("/baseline")
+def run_baseline():
+    """Run baseline inference against all tasks."""
+    return _run_inference_internal()
+
+
+@app.post("/inference")
+def run_inference():
+    """Run inference against all tasks."""
+    return _run_inference_internal()
 
 
 def main():
