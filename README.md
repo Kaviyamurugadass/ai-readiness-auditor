@@ -57,8 +57,8 @@ This environment tests whether an agent can **improve the codebase itself** — 
 ## Example Episode (Easy Task)
 
 ```
-Reset  → Agent sees: 5 broken Python files, no README, no docs
-         Score: 0.00
+Reset  → Agent sees: broken Python files, no README, no docs
+         Score: 0.00  |  Max steps: 3
 
 Step 1 → Agent creates README.md with Installation, Usage, API sections
          Score: 0.00 → 0.50  |  Reward: +0.50
@@ -69,10 +69,7 @@ Step 2 → Agent creates llms.txt with project description and links
 Step 3 → Agent improves README — adds Python code examples, more content
          Score: 0.78 → 0.94  |  Reward: +0.16
 
-Step 4 → Agent resubmits same files, no real improvement
-         Score: 0.94 → 0.94  |  Reward: 0.00  (no reward for no-ops)
-
-Done   → Final score: 0.94 in 4 steps
+Done   → Final score: 0.94 in 3 steps
          Total reward collected: +0.94 (sum of all step rewards = final score)
 ```
 
@@ -132,14 +129,14 @@ Done   → Final score: 0.94 in 4 steps
 
 **Goal:** Complete AI-readiness overhaul — documentation, AI files, structure, AND code quality.
 
-**What's tested:** Code understanding, refactoring ~38 functions across 5 files, plus everything from easy and medium tasks.
+**What's tested:** Code understanding, refactoring 28-38 functions across 5 files, plus everything from easy and medium tasks.
 
 **Composite scoring:**
 - Easy checks (Task 1): **25% weight**
 - Medium checks (Task 2): **25% weight**
 - Code quality checks: **50% weight**
 
-#### Code Quality Checks (applied to 5 source files, ~38 functions)
+#### Code Quality Checks (applied to 5 source files, 28-38 functions)
 
 | # | Check | Method | Score |
 |---|-------|--------|-------|
@@ -171,10 +168,10 @@ Done   → Final score: 0.94 in 4 steps
 - **Combines documentation + code refactoring** — the hard task requires both writing and coding skills
 - **Large action space** — agent can create/modify any file with any content
 - **Penalizes destructive edits** — submitting invalid Python yields negative reward
-- **Genuinely hard for frontier models** — baseline scores 0.40 on hard task; renaming 38 functions correctly while preserving functionality is non-trivial
+- **Genuinely hard for frontier models** — baseline scores 0.40 on hard task; renaming dozens of functions correctly while preserving functionality is non-trivial
 
 The sample project has:
-- **~38 functions** with 0% type hints, 0% docstrings
+- **28-38 functions** with 0% type hints, 0% docstrings
 - **12 functions** with camelCase names (violating PEP 8)
 - **All error messages** are generic ("bad", "error")
 - **Zero** documentation files
@@ -210,7 +207,7 @@ After each step, the agent receives:
 | `score` | float | Current aggregate score (0.0-1.0) |
 | `score_breakdown` | dict | Per-check scores (e.g. `{"readme_exists": 1.0, "llms_txt_exists": 0.0}`) |
 | `feedback` | list[str] | Human-readable feedback on what's still missing |
-| `steps_remaining` | int | Steps left before episode ends (max 7) |
+| `steps_remaining` | int | Steps left before episode ends (easy=3, medium=5, hard=10) |
 | `reward` | float | Score improvement since last step (delta) |
 | `done` | bool | Whether the episode has ended |
 
@@ -248,11 +245,11 @@ This provides a reproducible reference score for comparison.
 
 | Task | Score | Steps | Interpretation |
 |------|-------|-------|----------------|
-| Easy | 1.00 | 1 | Documentation generation is straightforward for LLMs |
-| Medium | 0.87 | 7 | Requires multiple AI instruction files and project structure fixes |
-| Hard | 0.40 | 7 | Code refactoring genuinely challenges smaller models |
+| Easy | 0.93–1.00 | 1–2 | Documentation generation is straightforward for LLMs |
+| Medium | 0.73–0.92 | 2–5 | Requires multiple AI instruction files and project structure fixes |
+| Hard | 0.40–0.53 | 4–7 | Code refactoring genuinely challenges models |
 
-*Baseline model: meta-llama/Llama-3.1-8B-Instruct via HuggingFace Inference API (free)*
+*Scores vary by model and project. Tested with Llama-3.1-8B, Qwen2.5-Coder-32B, and rule-based fallback.*
 
 ## OpenEnv Compliance
 
@@ -315,7 +312,7 @@ python inference.py
 │   └── grading.py        # Deterministic scoring (ast + regex)
 ├── data/
 │   └── sample_project/   # The "broken" project agents must fix
-│       └── src/dataflow/ # 5 files, ~38 functions, deliberately bad
+│       └── src/dataflow/ # 5 files, 28-38 functions, deliberately bad
 ├── static/
 │   └── index.html        # Interactive dashboard UI
 ├── Dockerfile

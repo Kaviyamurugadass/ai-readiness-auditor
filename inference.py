@@ -329,8 +329,26 @@ def run_inference_no_llm(env_url: str) -> dict:
                 result = env.reset(task_id=task_id)
                 obs = result.observation
 
-                # State-aware fallback: check feedback to decide what files to submit
-                all_fallback = FALLBACK_FILES.get("easy", []) + FALLBACK_FILES.get("medium", [])
+                # Detect project name from files
+                project_files_str = " ".join(obs.project_files.keys())
+                if "taskrunner" in project_files_str:
+                    project_name = "taskrunner"
+                    project_desc = "A Python task scheduling and execution library"
+                else:
+                    project_name = "dataflow"
+                    project_desc = "A Python data pipeline library for loading, transforming, validating, and exporting data"
+
+                # Build project-aware fallback README
+                project_readme = FALLBACK_FILES["easy"][0]["README.md"].replace("DataFlow", project_name.capitalize()).replace(
+                    "data pipeline library for loading, transforming, validating, and exporting data",
+                    project_desc.split("A Python ")[-1] if "A Python" in project_desc else project_desc
+                )
+                project_llms = FALLBACK_FILES["easy"][0]["llms.txt"].replace("DataFlow", project_name.capitalize()).replace(
+                    "data pipeline library", project_desc.split("A Python ")[-1].split(" library")[0] + " library"
+                )
+
+                adapted_easy = [{"README.md": project_readme, "llms.txt": project_llms}]
+                all_fallback = adapted_easy + FALLBACK_FILES.get("medium", [])
 
                 for file_set in all_fallback:
                     if result.done:
