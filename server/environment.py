@@ -43,6 +43,8 @@ TASK_DESCRIPTIONS = {
 
 SAMPLE_PROJECTS = ["sample_project", "sample_project_2"]
 
+MAX_STEPS = {"easy": 3, "medium": 5, "hard": 10}
+
 
 class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorState]):
     SUPPORTS_CONCURRENT_SESSIONS = True
@@ -63,7 +65,7 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
             episode_id=episode_id or str(uuid.uuid4()),
             step_count=0,
             task_id=task_id,
-            max_steps=7,
+            max_steps=MAX_STEPS.get(task_id, 7),
             current_score=grade.score,
             project_files=dict(self._project_files),
         )

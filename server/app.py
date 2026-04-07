@@ -63,7 +63,7 @@ def get_tasks():
                 "name": "README & llms.txt",
                 "description": "Create README.md with standard sections (Installation, Usage, API Reference, code examples) and llms.txt with project description and links for the given codebase",
                 "difficulty": "easy",
-                "max_steps": 7,
+                "max_steps": 3,
             },
             {
                 "id": "medium",
@@ -75,7 +75,7 @@ def get_tasks():
                     "fix __init__.py with __all__, add py.typed"
                 ),
                 "difficulty": "medium",
-                "max_steps": 7,
+                "max_steps": 5,
             },
             {
                 "id": "hard",
@@ -87,7 +87,7 @@ def get_tasks():
                     "make error messages descriptive, fix bare except clauses"
                 ),
                 "difficulty": "hard",
-                "max_steps": 7,
+                "max_steps": 10,
             },
         ],
         "action_schema": AuditorAction.model_json_schema(),
