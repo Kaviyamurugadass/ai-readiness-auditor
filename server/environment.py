@@ -1,6 +1,7 @@
 """AI-Readiness Auditor environment — core logic."""
 import os
 import uuid
+import random
 from pathlib import Path
 from typing import Any, Optional
 
@@ -14,8 +15,7 @@ TASK_DESCRIPTIONS = {
         "You are auditing a Python project for AI-readiness. Your task is to:\n"
         "1. Create a README.md with sections: Installation, Usage/Quickstart, API Reference, and code examples\n"
         "2. Create an llms.txt file with a structured description of the project and relevant links\n\n"
-        "The project is a data pipeline library called 'dataflow'. "
-        "Review the source files to understand what it does, then create these documentation files."
+        "Review the source files to understand what the project does, then create these documentation files."
     ),
     "medium": (
         "You are auditing a Python project for AI-readiness. Your task is to:\n"
@@ -27,7 +27,7 @@ TASK_DESCRIPTIONS = {
         "6. Add a py.typed marker file\n"
         "7. Create CONTRIBUTING.md with contribution guidelines, code style, and development setup\n"
         "8. Create .pre-commit-config.yaml with linting and formatting hooks\n\n"
-        "The project is a data pipeline library called 'dataflow'."
+        "Review the source files to understand the project structure."
     ),
     "hard": (
         "You are auditing a Python project for AI-readiness. Complete ALL of the following:\n"
@@ -37,9 +37,11 @@ TASK_DESCRIPTIONS = {
         "3. Fix Python source code: add type hints to all functions, add docstrings, "
         "fix function/variable names to follow PEP 8 (snake_case, descriptive names), "
         "make error messages descriptive, replace bare except: with specific exception types\n\n"
-        "The project is a data pipeline library called 'dataflow'."
+        "Review the source files carefully before making changes."
     ),
 }
+
+SAMPLE_PROJECTS = ["sample_project", "sample_project_2"]
 
 
 class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorState]):
@@ -54,7 +56,7 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
         if task_id not in TASK_DESCRIPTIONS:
             task_id = "easy"
 
-        self._project_files = self._load_sample_project()
+        self._project_files = self._load_sample_project(seed=seed)
         grade = grade_project(self._project_files, task_id)
 
         self._state = AuditorState(
@@ -114,8 +116,12 @@ class AuditorEnvironment(Environment[AuditorAction, AuditorObservation, AuditorS
     def state(self):
         return self._state
 
-    def _load_sample_project(self):
-        project_dir = Path(__file__).parent.parent / "data" / "sample_project"
+    def _load_sample_project(self, seed=None):
+        """Load a random sample project from the data directory."""
+        if seed is not None:
+            random.seed(seed)
+        project_name = random.choice(SAMPLE_PROJECTS)
+        project_dir = Path(__file__).parent.parent / "data" / project_name
         files = {}
         for file_path in project_dir.rglob("*"):
             if file_path.is_file():
